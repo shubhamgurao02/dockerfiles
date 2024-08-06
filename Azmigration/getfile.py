@@ -7,7 +7,7 @@ pipelinename=""
 file_name=""
 # Personal Access Token (PAT) 
 username="sgurao"
-pat = "yoljoyqpawy3ufu3f7xay33ff2glyo3gpskeg6jlaphplbuoy7oaa"
+pat = "tokken"
 headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Basic {pat}'
