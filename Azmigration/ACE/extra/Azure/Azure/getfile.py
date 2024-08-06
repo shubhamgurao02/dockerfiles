@@ -19,7 +19,7 @@ headers = {
 
     # Get pipelines
 pipelines_url = f"{organization_url}/{project_name}/_apis/build/builds?api-version=7.1-preview.7"
-response = requests.get(pipelines_url, auth = HTTPBasicAuth("sgurao","7lruw4higmgmiwgsstsdpygylibmtvucefkg2zucprmdwyg2ssfq"))
+response = requests.get(pipelines_url, auth = HTTPBasicAuth("sgurao","token"))
 #print(response )
 if response.status_code == 200:
     pipelines = response.json()
@@ -41,13 +41,13 @@ if response.status_code == 200:
                 print(pipeline_name)
 
                 fileid_url=f"{organization_url}/{project_name}/_apis/build/builds/{build_id}/artifacts?artifactName=output&api-version=7.1-preview.5"
-                runs_response = requests.get(fileid_url, auth = HTTPBasicAuth("sgurao","7lruw4higmgmiwgsstsdpygylibmtvucefkg2zucprmdwyg2ssfq"))
+                runs_response = requests.get(fileid_url, auth = HTTPBasicAuth("sgurao","token"))
                 #print("Hi")
                 if runs_response.status_code == 200:
                     pipeline_runs = runs_response.json()
                     file_id=pipeline_runs['resource']['data']
                     print("file id",file_id)
                 blobid_url=f"{organization_url}/{project_name}/_apis/build/builds/{build_id}/artifacts?artifactName=output&fileId={file_id}&fileName={file_name}&api-version=7.1-preview.5"
-                blob_response = requests.get(blobid_url, auth = HTTPBasicAuth("sgurao","7lruw4higmgmiwgsstsdpygylibmtvucefkg2zucprmdwyg2ssfq"))
+                blob_response = requests.get(blobid_url, auth = HTTPBasicAuth("sgurao","token"))
                 #print(blob_response.json())
                 break
