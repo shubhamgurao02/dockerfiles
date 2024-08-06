@@ -70,7 +70,7 @@ if args.u and args.f and args.t and args.n:
 
 
 #######################################User guide #############################
-#python barurls.py -f names.txt -t sk4fngxkmuau5gtmujw7yf6punzpm74jgt35ghpeivwqnugzqvmq -u sgurao -n /home/baru.txt
+#python barurls.py -f names.txt -t token -u sgurao -n /home/baru.txt
 # -f -- for file path which contains name of barfile name and pipelines names it should be same format as mentioned 
 # -u -- username of azure devops account
 # -t -- token of azure devops account
