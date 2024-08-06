@@ -10,7 +10,7 @@ demo=open('names.txt','r')
 demo=demo.readlines()
 
 username="sgurao"
-pat = "dnhs552yeraxolm6fpqkdgxpce2ifdnpmetywt5amb5aydrfwqzq"
+pat = "token"
 #print(pipelinename)
 
 headers = {
