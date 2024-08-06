@@ -1,0 +1,59 @@
+apiVersion: appconnect.ibm.com/v1beta1
+kind: IntegrationRuntime
+metadata:
+  name: oms-b
+  namespace: ace-apac
+  labels:
+    backup.appconnect.ibm.com/component: integrationserver
+spec:
+  adminServerSecure: false
+  annotations:
+    productName: "IBM App Connect Enterprise for non-production"
+    productID: ""
+    productChargedContainers: "All"
+    productMetric: "VIRTUAL_PROCESSOR_CORE"
+    productCloudpakRatio: "2:3"
+    cloudpakName: "IBM Cloud Pak for Integration"
+    cloudpakId: ""
+  barURL:
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8722/artifacts?artifactName=output&fileId=415D960B9742CA4DCEB6AE74B6C899B19441E5ECF04292B6846B40800FF5234F01&fileName=dev-omsrlap-bi2sfccitemmasterapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7779/artifacts?artifactName=output&fileId=7D60D432F460809BD655D76D89CE5182733DCA0B42F36A32A561DBB86B00A92E01&fileName=dev-omsrlap-lgs2omsinventoryfeedsnapshotapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8684/artifacts?artifactName=output&fileId=22C845EAC9A71376E9C1D7CEE606976BE5ADD38D13E174016983A43EB915CD8B01&fileName=dev-omsrlap-oms2baozunrtamhkdcfullapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/6669/artifacts?artifactName=output&fileId=AC42671CAE0CF5F27FAE6480FF60F296C3A19D5FD59A62B78ED95DA25CE2DAA101&fileName=dev-omsrlap-oms2sfccrtamkrsnapshotapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/6672/artifacts?artifactName=output&fileId=C5F669312F6FFECC75A791B8830F64DED34A74F57DA0E3E962751CD7197435F301&fileName=dev-omsrlap-oms2sfccrtammysnapshotapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/6674/artifacts?artifactName=output&fileId=976B92F6337C01563F761609464FACCF954B10BE97D190D8C07D92BEF7EDE04301&fileName=dev-omsrlap-oms2sfccrtamseasnapshotapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/6676/artifacts?artifactName=output&fileId=BC9ED20E971CFB6A20B9F44622336B96DEE15D8C3F81486F0CBAB9F20003DD5501&fileName=dev-omsrlap-oms2sfccrtamsgsnapshotapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8685/artifacts?artifactName=output&fileId=F6FE3CCCA39F856E9F0E04A7077594C6F83AD1719A3A473A742A0F7F53E5FFC501&fileName=dev-omsrlap-oms2sfccrtamtwsnapshotapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7789/artifacts?artifactName=output&fileId=27350E6C1FC649B2C4BBDEFBDE1B5B502FE5DA4979EDDB06DEB64E6CE7E4080901&fileName=dev-omsrlap-oms2sfccrtamupdatesnapshotapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/3512/artifacts?artifactName=output&fileId=B802A88CFC2C3189A7E2747A2208D6DE96678F1F9AE36EC3D40BBEC7B9E172EA01&fileName=dev-rlcommongtmlogginglib.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7111/artifacts?artifactName=output&fileId=F54D04EC964462AE12DAEA1E90AC0108EDB32FEBFFAA762E14DD60F55C9CB53E01&fileName=dev-omsrlapcommonutilitylib.bar&api-version=7.1-preview.5
+
+  dashboardUsers:
+    bypassGenerate: false 
+  designerFlowsOperationMode: disabled
+  enableMetrics: false
+  configurations: [ "oms-policy-project","oms-serverconf","azureartifacts-barauth","application.kdb","application.sth"]
+  labels:
+    version: v1
+  license:
+    accept: true
+    license: L-QECF-MBXVLU 
+    use: CloudPakForIntegrationNonProduction
+  pod:
+    containers:
+      runtime:
+        resources:
+          limits:
+            cpu: 500m
+            memory: 2000Mi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+
+  replicas: 1
+  router:
+    timeout: 120ms
+  service:
+    endpointType: http
+    type: ClusterIP
+  version: '12.0.12.0-r1'

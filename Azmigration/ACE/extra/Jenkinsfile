@@ -1,0 +1,45 @@
+pipeline {
+
+	agent {
+    
+    	label 'docker'
+    }
+    
+    stages {
+        
+        stage('Checkout') {
+
+        steps {                  
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ado-buildconductor-ace/context/repo-bc-common']], submoduleCfg: [], userRemoteConfigs: [[url: 'http://10.0.10.229/InnovationCenter/build-conductor/buildconductor-common.git', credentialsId: '16afd487-eb6d-4d2a-9618-d0d8b2c0c617']]])
+          
+          		checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'ado-buildconductor-ace/context/repo-bc-ace']], submoduleCfg: [], userRemoteConfigs: [[url: 'http://10.0.10.229/InnovationCenter/build-conductor/buildconductor-iib.git', credentialsId: '16afd487-eb6d-4d2a-9618-d0d8b2c0c617']]])
+            }   
+        }
+        
+        stage('Build') {
+            steps {
+            
+             	sh "cd ado-buildconductor-ace; docker build -t greghodgkinson/ado-buildconductor-ace-12.0.3.0:edge -f ./Dockerfile ."           
+            }
+        }
+        
+		stage('Publish') {
+            steps {
+                
+            	withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId:'9065b301-2e66-4209-93ba-df111a6ea614', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {            
+             		
+             		sh "docker login -u $USERNAME -p $PASSWORD"
+				}
+				
+				// This makes sure we don't time out build while docker push is taking place
+				
+				script {
+				
+					System.setProperty("org.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL", "3800");
+ 				}
+				
+             	sh "docker push greghodgkinson/ado-buildconductor-ace-12.0.3.0:edge"                          
+            }
+        }
+    }
+}

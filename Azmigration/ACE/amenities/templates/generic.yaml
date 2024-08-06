@@ -1,0 +1,9 @@
+--- 
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata: 
+  name: {{ include "amenities.cnfg.gen" . }}-generic-config-files
+spec: 
+  data: {{ .Values.genericBase64 }}
+  description: "Generic Config Files for ACE"
+  type: generic

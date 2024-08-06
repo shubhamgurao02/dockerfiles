@@ -1,0 +1,51 @@
+[
+    {
+        "context": " Goto RFHUTIL  Select Queue manager and Queue name Take Backup and if those are trigger messages then purge the queue, else reprocess the messages in to input queue.        ",
+        "qas": [
+            {
+                "id": "00001",
+                "is_impossible": true ,
+                "question": "how to resolve this error <Text>An error occurred whilst parsing with DFDL</Text> <Text>CTDP3002E: Unexpected data found at offset '44754' after parsing completed. Data: '0x55...'.</Text> ?",
+                "answers": [
+                    {
+                        "text": "1. Goto RFHUTIL 2. Select Queue manager and Queue name 3. Take Backup and if those are trigger messages then purge the queue, else reprocess the messages in to input queue.",
+                        "answer_start": 1 
+                    }
+                ]
+            },
+            {
+                "id": "00002",
+                "is_impossible": true,
+                "question": "How to solve error related to OMSRLNA interface?",
+                "answers": [
+                    {
+                        "text": "1. Goto RFHUTIL 2. Select Queue manager and Queue name 3. Take Backup and if those are trigger messages then purge the queue, else reprocess the messages in to input queue.",
+                        "answer_start": 1
+                    }
+                ]
+            },
+            {
+                "id": "00003",
+                "is_impossible": true,
+                "question": "OMSRLNA.SFCC.CODE.ORDERFEED.ERROR.DETAILS?",
+                "answers": [
+                    {
+                        "text": "1. Goto RFHUTIL 2. Select Queue manager and Queue name 3. Take Backup and if those are trigger messages then purge the queue, else reprocess the messages in to input queue.",
+                        "answer_start": 1
+                    }
+                ]
+            },
+            {
+                "id": "00004",
+                "question": "RL1_WMQ_QUEUE_NOT_READ_OMSRLNA ?",
+                "is_impossible": true,
+                "answers": [
+                    {
+                        "text": "1. Goto RFHUTIL 2. Select Queue manager and Queue name 3. Take Backup and if those are trigger messages then purge the queue, else reprocess the messages in to input queue.",
+                        "answer_start": 1
+                    }
+                ]
+            }
+        ]
+    }
+]

@@ -1,0 +1,62 @@
+apiVersion: appconnect.ibm.com/v1beta1
+kind: IntegrationRuntime
+metadata:
+  name: oms-r1
+  namespace: ace-apac
+  labels:
+    backup.appconnect.ibm.com/component: integrationserver
+spec:
+  adminServerSecure: false
+  annotations:
+    productName: "IBM App Connect Enterprise for non-production"
+    productID: ""
+    productChargedContainers: "All"
+    productMetric: "VIRTUAL_PROCESSOR_CORE"
+    productCloudpakRatio: "2:3"
+    cloudpakName: "IBM Cloud Pak for Integration"
+    cloudpakId: ""
+  barURL:
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7074/artifacts?artifactName=output&fileId=D73B5AF9503EDCB168439697655858508C5AB47E4E8DDD11F2DC3380B47F29C701&fileName=dev-omsrlap-baozun2omsordercreateapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7777/artifacts?artifactName=output&fileId=37DB5F6151C28B638DB865EDF590609490C0A6132CAEB2978FE7CFD78E436EAA01&fileName=dev-omsrlap-lgs2omsinventoryfeeddeltaapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7780/artifacts?artifactName=output&fileId=8C0C3E8414128FC7752528B32E0F06E6C9B60C78332B5BD5D43270162B6E549901&fileName=dev-omsrlap-lgs2omsshipcancelapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7781/artifacts?artifactName=output&fileId=75FBF59DAF585BF4CA833FDD6664EFE3E1DD4B068D4C9591FE301C1BC02E6C1C01&fileName=dev-omsrlap-lgs2omsshipconfirmapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7908/artifacts?artifactName=output&fileId=4F0BDD77BEB1EA1FDE91CB0BC2E72FBEB79E5C88D63F1126D60D2FA957675CD101&fileName=dev-omsrlap-micros2omsposinvdeltaapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7936/artifacts?artifactName=output&fileId=383CF6E688342F30DB9829890F6D055E5642ADE6FD6610CF86DC628AF37C600D01&fileName=dev-omsrlap-micros2omsposinvfullapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8618/artifacts?artifactName=output&fileId=64C1C95B77F29B0739DE35B9F65AF5C4D120CB20F65C1A6697DFBADC4293828E01&fileName=dev-omsrlap-oms2aftershiptracktraceapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8671/artifacts?artifactName=output&fileId=62C69BC45411FC6E6C4F24E55969AF53602A48D4B63268F3447BA7E9D416EF2201&fileName=dev-omsrlap-oms2bankproorderuploadapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7785/artifacts?artifactName=output&fileId=455C619D194CA6437B365EC78FE4FEECAF6D430541B4618F32143B894D82D19001&fileName=dev-omsrlap-oms2givexgiftcardactivationapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7786/artifacts?artifactName=output&fileId=B2D896D0C46E5DA2C9BA3B57CF8F0FA2BD0D0450AEA574D2510C6BB6862A74D301&fileName=dev-omsrlap-oms2lgsshiprequestapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8664/artifacts?artifactName=output&fileId=E380D0017622C38F58348CC812721FC4768532F432B794F697188C61206BAE8D01&fileName=dev-omsrlap-oms2multisysfinancialpostingapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8608/artifacts?artifactName=output&fileId=77FCBAB808E31DBA49FE3EAA5FF0E54A7968CA8BB79BBE5179CE720EEE32D21102&fileName=dev-omsrlap-oms2zetaemailnotificationapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/8753/artifacts?artifactName=output&fileId=7EF3CE967D87B0F71F2A4B1E5E1FC67E229286C7DB0AC388EF0A3D892B85362901&fileName=dev-omsrlap-sfcc2multisysordercreateapp.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/3512/artifacts?artifactName=output&fileId=B802A88CFC2C3189A7E2747A2208D6DE96678F1F9AE36EC3D40BBEC7B9E172EA01&fileName=dev-rlcommongtmlogginglib.bar&api-version=7.1-preview.5
+    - https://dev.azure.com/RL-Integration//ACE/_apis/build/builds/7111/artifacts?artifactName=output&fileId=F54D04EC964462AE12DAEA1E90AC0108EDB32FEBFFAA762E14DD60F55C9CB53E01&fileName=dev-omsrlapcommonutilitylib.bar&api-version=7.1-preview.5
+  dashboardUsers:
+    bypassGenerate: false 
+  designerFlowsOperationMode: disabled
+  enableMetrics: false
+  configurations: [ "oms-policy-project","oms-serverconf","azureartifacts-barauth","application.kdb","application.sth"]
+  labels:
+    version: v1
+  license:
+    accept: true
+    license: L-QECF-MBXVLU 
+    use: CloudPakForIntegrationNonProduction
+  pod:
+    containers:
+      runtime:
+        resources:
+          limits:
+            cpu: 500m
+            memory: 2000Mi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+
+  replicas: 1
+  router:
+    timeout: 120ms
+  service:
+    endpointType: http
+    type: ClusterIP
+  version: '12.0.12.0-r1'

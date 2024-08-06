@@ -1,0 +1,4 @@
+#First CMD
+    top -c -bn 1 > health_check_top.txt
+#Second CMD
+    

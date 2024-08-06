@@ -1,0 +1,9 @@
+---
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: {{ include "amenities.cnfg.servercon" . }}-server-conf
+spec:
+  data: {{ .Values.serverconfBase64 }}
+  description: "Server conf"
+  type: serverconf

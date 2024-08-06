@@ -1,0 +1,1364 @@
+build_apigatewayms:
+  stage: build
+  tags:
+    - ppmrunner
+  script:
+    - echo $CI_COMMIT_BRANCH
+    - podman pull docker.io/shubhgdocker/pbc-java-jdk-8-build:latest
+    - ls -ltr
+    - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-8-build:latest build ApiGatewayMS
+    - ls -ltr ApiGatewayMS
+    - cp ApiGatewayMS/target/*jar .
+    
+  artifacts:
+    paths:
+      - '*.jar'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"'
+      changes:
+        - ApiGatewayMS/**/*
+
+deploy_apigatewayms:
+  stage: deploy
+  tags:
+    - ppmrunner
+  dependencies:
+    - build_apigatewayms 
+  script:
+    - ls -ltr
+    - podman rmi --force apigatewayms 
+    - podman rm -f apigatewayms 
+    - podman build -t apigatewayms --build-arg WAR_FILE=ApiGatewayMS.jar --build-arg TOMCAT_PORT=80 -f java8file .
+    - podman run -d --network ppm_network --name apigatewayms -p 9191:8080 apigatewayms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - ApiGatewayMS/**/*
+    
+  needs:
+    - job: build_apigatewayms
+
+deploy_qa_apigatewayms:
+  stage: deploy
+  tags:
+    - ppmrunner
+  dependencies:
+    - build_apigatewayms 
+  script:
+    - ls -ltr
+    - podman rmi --force apigatewayms 
+    - podman rm -f apigatewayms 
+    - podman build -t apigatewayms --build-arg WAR_FILE=ApiGatewayMS.jar --build-arg TOMCAT_PORT=80 -f java8file .
+    - podman run -d --network ppm_network --name apigatewayms -p 9191:8080 apigatewayms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - ApiGatewayMS/**/*
+    
+  needs:
+    - job: build_apigatewayms
+
+
+build_utilityms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+    - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+    - ls -ltr
+    - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build UtilityMS
+    - ls -ltr UtilityMS
+    - cp UtilityMS/target/*war .
+  artifacts:
+    paths:
+      - '*.war'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"'
+      changes:
+        - UtilityMS/**/*
+
+deploy_utilityms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_utilityms 
+  script:
+    - ls -ltr
+    - podman rmi --force utilityms 
+    - podman rm -f utilityms 
+    - podman build -t utilityms --build-arg WAR_FILE=UtilityMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name utilityms -p 8105:8080 utilityms 
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"' 
+      changes:
+        - UtilityMS/**/*
+  needs:
+    - job: build_utilityms
+
+deploy_qa_utilityms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_utilityms 
+  script:
+    - ls -ltr
+    - podman rmi --force utilityms 
+    - podman rm -f utilityms 
+    - podman build -t utilityms --build-arg WAR_FILE=UtilityMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name utilityms -p 8105:8080 utilityms 
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "ppm-qa"' 
+      changes:
+        - UtilityMS/**/*
+  needs:
+    - job: build_utilityms
+
+build_timeandexpensesms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+    - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+    - ls -ltr
+    - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build timeandexpensesms
+    - ls -ltr timeandexpensesms
+    - cp timeandexpensesms/target/*war .
+  artifacts:
+    paths:
+      - '*.war'
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"'
+      changes:
+        - timeandexpensesms/**/*
+deploy_timeandexpensesms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_timeandexpensesms 
+  script:
+    - ls -ltr
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - timeandexpensesms/**/*
+  needs:
+    - job: build_timeandexpensesms
+
+deploy_qa_timeandexpensesms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_timeandexpensesms 
+  script:
+    - ls -ltr
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - timeandexpensesms/**/*
+  needs:
+    - job: build_timeandexpensesms
+
+build_commonms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+    - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+    - ls -ltr
+    - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build CommonMS
+    - ls -ltr CommonMS
+    - cp CommonMS/target/*war .
+  artifacts:
+    paths:
+      - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - CommonMS/**/*
+deploy_commonms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_commonms 
+  script:
+    - ls -ltr
+    - podman rmi --force commonms 
+    - podman rm -f commonms 
+    - podman build -t commonms --build-arg WAR_FILE=CommonMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name commonms -p 8109:8080 commonms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - CommonMS/**/*
+  needs:
+    - job: build_commonms
+deploy_qa_commonms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_commonms 
+  script:
+    - ls -ltr
+    - podman rmi --force commonms 
+    - podman rm -f commonms 
+    - podman build -t commonms --build-arg WAR_FILE=CommonMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name commonms -p 8109:8080 commonms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - CommonMS/**/*
+  needs:
+    - job: build_commonms
+
+
+build_costms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build CostMS
+      - ls -ltr CommonMS
+      - cp CostMS/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - CostMS/**/*
+deploy_costms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_costms 
+  script:
+    #- ls -ltr
+    - podman rmi --force costms 
+    - podman rm -f costms 
+    - podman build -t costms --build-arg WAR_FILE=CostMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+#podman build -t costms --build-arg WAR_FILE=CostMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name costms -p 8090:8080 costms
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - CostMS/**/*
+  needs:
+    - job: build_costms
+deploy_qa_costms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_costms 
+  script:
+    #- ls -ltr
+    - podman rmi --force costms 
+    - podman rm -f costms 
+    - podman build -t costms --build-arg WAR_FILE=CostMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+#podman build -t costms --build-arg WAR_FILE=CostMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name costms -p 8090:8080 costms
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - CostMS/**/*
+  needs:
+    - job: build_costms
+
+
+build_jobschedularms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build JobSchedulerMS
+      - cp JobSchedulerMS/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - JobSchedulerMS/**/*
+deploy_jobschedularms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_jobschedularms 
+  script:
+    - ls -ltr
+    - podman rmi --force jobschedularms 
+    - podman rm -f jobschedularms 
+    - podman build -t jobschedularms --build-arg WAR_FILE=JobSchedulerMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name jobschedularms -p 8110:8080 jobschedularms 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - JobSchedulerMS/**/*
+  needs:
+    - job: build_jobschedularms
+deploy_qa_jobschedularms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_jobschedularms 
+  script:
+    - ls -ltr
+    - podman rmi --force jobschedularms 
+    - podman rm -f jobschedularms 
+    - podman build -t jobschedularms --build-arg WAR_FILE=JobSchedulerMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name jobschedularms -p 8110:8080 jobschedularms 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - JobSchedulerMS/**/*
+  needs:
+    - job: build_jobschedularms
+
+build_layoutms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build LayoutMS
+      - cp LayoutMS/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - LayoutMS/**/*
+deploy_layoutms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_layoutms 
+  script:
+    - ls -ltr
+    - podman rmi --force layoutms 
+    - podman rm -f layoutms 
+    - podman build -t layoutms --build-arg WAR_FILE=LayoutMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name layoutms -p 8096:8080 layoutms 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - LayoutMS/**/*
+  needs:
+    - job: build_layoutms
+  
+deploy_qa_layoutms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_layoutms 
+  script:
+    - ls -ltr
+    - podman rmi --force layoutms 
+    - podman rm -f layoutms 
+    - podman build -t layoutms --build-arg WAR_FILE=LayoutMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name layoutms -p 8096:8080 layoutms 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - LayoutMS/**/*
+  needs:
+    - job: build_layoutms
+  
+
+build_projectms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build ProjectMS
+      - cp ProjectMS/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - ProjectMS/**/*
+deploy_projectms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_projectms 
+  script:
+    - ls -ltr
+    - podman rmi --force projectms 
+    - podman rm -f projectms 
+    - podman build -t projectms --build-arg WAR_FILE=ProjectMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name projectms -p 8097:8080 projectms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - ProjectMS/**/*
+  needs:
+    - job: build_projectms
+deploy_qa_projectms:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_projectms 
+  script:
+    - ls -ltr
+    - podman rmi --force projectms 
+    - podman rm -f projectms 
+    - podman build -t projectms --build-arg WAR_FILE=ProjectMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name projectms -p 8097:8080 projectms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - ProjectMS/**/*
+  needs:
+    - job: build_projectms  
+
+build_salesms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build SalesMS
+      - cp SalesMS/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - SalesMS/**/*
+deploy_salesms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_salesms 
+  script:
+    - ls -ltr
+    - podman rmi --force salesms 
+    - podman rm -f salesms 
+    - podman build -t salesms --build-arg WAR_FILE=SalesMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name salesms -p 8111:8080 salesms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - SalesMS/**/*
+  needs:
+    - job: build_salesms
+deploy_qa_salesms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_salesms 
+  script:
+    - ls -ltr
+    - podman rmi --force salesms 
+    - podman rm -f salesms 
+    - podman build -t salesms --build-arg WAR_FILE=SalesMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name salesms -p 8111:8080 salesms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - SalesMS/**/*
+  needs:
+    - job: build_salesms
+
+build_utilityms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build UtilityMS
+      - cp UtilityMS/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - UtilityMS/**/*
+deploy_utilityms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_utilityms 
+  script:
+    - ls -ltr
+    - podman rmi --force utilityms  
+    - podman rm -f utilityms  
+    - podman build -t utilityms --build-arg WAR_FILE=UtilityMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name utilityms -p 8105:8080 utilityms  
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - UtilityMS/**/*
+  needs:
+    - job: build_utilityms
+deploy_qa_utilityms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_utilityms 
+  script:
+    - ls -ltr
+    - podman rmi --force utilityms  
+    - podman rm -f utilityms  
+    - podman build -t utilityms --build-arg WAR_FILE=UtilityMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name utilityms -p 8105:8080 utilityms  
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - UtilityMS/**/*
+  needs:
+    - job: build_utilityms
+
+build_vendorms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build VendorMS
+      - cp VendorMS/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - VendorMS/**/*
+deploy_vendorms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_vendorms 
+  script:
+    - ls -ltr
+    - podman rmi --force vendorms
+    - podman rm -f vendorms
+    - podman build -t vendorms --build-arg WAR_FILE=VendorMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name vendorms -p 8106:8080 vendorms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - VendorMS/**/*
+  needs:
+    - job: build_vendorms
+deploy_qa_vendorms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_vendorms 
+  script:
+    - ls -ltr
+    - podman rmi --force vendorms
+    - podman rm -f vendorms
+    - podman build -t vendorms --build-arg WAR_FILE=VendorMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name vendorms -p 8106:8080 vendorms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - VendorMS/**/*
+  needs:
+    - job: build_vendorms
+
+
+build_accountingms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build accountingms
+      - cp accountingms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - accountingms/**/*
+deploy_accountingms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_accountingms 
+  script:
+    - ls -ltr
+    - podman rmi --force accountingms 
+    - podman rm -f accountingms 
+    - podman build -t accountingms --build-arg WAR_FILE=accountingms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name accountingms -p 8107:8080 accountingms   
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - accountingms/**/*
+
+  needs:
+    - job: build_accountingms
+deploy_qa_accountingms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_accountingms 
+  script:
+    - ls -ltr
+    - podman rmi --force accountingms 
+    - podman rm -f accountingms 
+    - podman build -t accountingms --build-arg WAR_FILE=accountingms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name accountingms -p 8107:8080 accountingms   
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - accountingms/**/*
+
+  needs:
+    - job: build_accountingms
+  
+
+build_administrationms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build administrationms
+      - cp administrationms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - administrationms/**/*
+deploy_administrationms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_administrationms 
+  script:
+    - ls -ltr
+    - podman rmi --force administrationms 
+    - podman rm -f administrationms 
+    - podman build -t administrationms --build-arg WAR_FILE=administrationms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name administrationms -p 8108:8080 administrationms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - administrationms/**/*
+  needs:
+    - job: build_administrationms
+deploy_qa_administrationms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_administrationms 
+  script:
+    - ls -ltr
+    - podman rmi --force administrationms 
+    - podman rm -f administrationms 
+    - podman build -t administrationms --build-arg WAR_FILE=administrationms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name administrationms -p 8108:8080 administrationms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - administrationms/**/*
+  needs:
+    - job: build_administrationms
+    
+build_customersms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build customersms
+      - cp customersms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - customersms/**/*
+deploy_customersms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_customersms 
+  script:
+    - ls -ltr
+    - podman rmi --force customersms 
+    - podman rm -f customersms 
+    - podman build -t customersms --build-arg WAR_FILE=customersms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name customersms -p 8091:8080 customersms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      changes:
+        - customersms/**/*
+
+  needs:
+    - job: build_customersms
+deploy_qa_customersms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_customersms 
+  script:
+    - ls -ltr
+    - podman rmi --force customersms 
+    - podman rm -f customersms 
+    - podman build -t customersms --build-arg WAR_FILE=customersms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name customersms -p 8091:8080 customersms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - customersms/**/*
+
+  needs:
+    - job: build_customersms
+
+build_dashboardsms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build dashboardsms
+      - cp dashboardsms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - dashboardsms/**/*
+deploy_dashboardsms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_dashboardsms
+  script:
+    - ls -ltr
+    - podman rmi --force dashboardsms 
+    - podman rm -f dashboardsms 
+    - podman build -t dashboardsms --build-arg WAR_FILE=dashboardsms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name dashboardsms -p 8092:8080 dashboardsms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - dashboardsms/**/*
+
+  needs:
+    - job: build_dashboardsms
+deploy_qa_dashboardsms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_dashboardsms
+  script:
+    - ls -ltr
+    - podman rmi --force dashboardsms 
+    - podman rm -f dashboardsms 
+    - podman build -t dashboardsms --build-arg WAR_FILE=dashboardsms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name dashboardsms -p 8092:8080 dashboardsms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - dashboardsms/**/*
+
+  needs:
+    - job: build_dashboardsms  
+build_fullfilmentms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build fullfilmentms
+      - cp fullfilmentms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - fullfilmentms/**/*
+deploy_fullfilmentms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_fullfilmentms
+  script:
+    - ls -ltr
+    - podman rmi --force fullfilmentms 
+    - podman rm -f fullfilmentms 
+    - podman build -t fullfilmentms --build-arg WAR_FILE=fullfilmentms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name fullfilmentms -p 8093:8080 fullfilmentms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - fullfilmentms/**/*
+
+  needs:
+    - job: build_fullfilmentms
+deploy_qa_fullfilmentms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_fullfilmentms
+  script:
+    - ls -ltr
+    - podman rmi --force fullfilmentms 
+    - podman rm -f fullfilmentms 
+    - podman build -t fullfilmentms --build-arg WAR_FILE=fullfilmentms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name fullfilmentms -p 8093:8080 fullfilmentms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - fullfilmentms/**/*
+
+  needs:
+    - job: build_fullfilmentms
+
+
+build_governancems:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build governancems
+      - cp governancems/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - governancems/**/*
+deploy_governancems:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_governancems
+  script:
+    - ls -ltr
+    - podman rmi --force governancems 
+    - podman rm -f governancems 
+    - podman build -t governancems --build-arg WAR_FILE=governancems.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name governancems -p 8094:8080 governancems 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - governancems/**/*
+
+  needs:
+    - job: build_governancems
+deploy_qa_governancems:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_governancems
+  script:
+    - ls -ltr
+    - podman rmi --force governancems 
+    - podman rm -f governancems 
+    - podman build -t governancems --build-arg WAR_FILE=governancems.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name governancems -p 8094:8080 governancems 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - governancems/**/*
+
+  needs:
+    - job: build_governancems  
+build_invoicems:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build invoicems
+      - cp invoicems/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - invoicems/**/*
+deploy_invoicems:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_invoicems
+  script:
+    - ls -ltr
+    - podman rmi --force invoicems 
+    - podman rm -f invoicems 
+    - podman build -t invoicems --build-arg WAR_FILE=invoicems.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name invoicems -p 8095:8080 invoicems 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - invoicems/**/*
+
+  needs:
+    - job: build_invoicems
+deploy_qa_invoicems:
+  stage: deploy
+  tags:
+    - ppmrunner
+
+  dependencies:
+    - build_invoicems
+  script:
+    - ls -ltr
+    - podman rmi --force invoicems 
+    - podman rm -f invoicems 
+    - podman build -t invoicems --build-arg WAR_FILE=invoicems.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name invoicems -p 8095:8080 invoicems 
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - invoicems/**/*
+
+  needs:
+    - job: build_invoicems
+
+build_reportms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build reportms
+      - cp reportms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - reportms/**/*
+deploy_reportms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_reportms
+  script:
+    - ls -ltr
+    - podman rmi --force reportms 
+    - podman rm -f reportms 
+    - podman build -t reportms --build-arg WAR_FILE=reportms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name reportms -p 8098:8080 reportms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - reportms/**/*
+
+  needs:
+    - job: build_reportms
+deploy_qa_reportms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_reportms
+  script:
+    - ls -ltr
+    - podman rmi --force reportms 
+    - podman rm -f reportms 
+    - podman build -t reportms --build-arg WAR_FILE=reportms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name reportms -p 8098:8080 reportms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - reportms/**/*
+
+  needs:
+    - job: build_reportms
+build_revenuemetricsms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build revenuemetricsms
+      - cp revenuemetricsms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - revenuemetricsms/**/*
+deploy_revenuemetricsms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_revenuemetricsms
+  script:
+    - ls -ltr
+    - podman rmi --force revenuemetricsms 
+    - podman rm -f revenuemetricsms 
+    - podman build -t revenuemetricsms --build-arg WAR_FILE=revenuemetricsms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name revenuemetricsms -p 8099:8080 revenuemetricsms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - revenuemetricsms/**/*
+
+  needs:
+    - job: build_revenuemetricsms
+deploy_qa_revenuemetricsms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_revenuemetricsms
+  script:
+    - ls -ltr
+    - podman rmi --force revenuemetricsms 
+    - podman rm -f revenuemetricsms 
+    - podman build -t revenuemetricsms --build-arg WAR_FILE=revenuemetricsms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name revenuemetricsms -p 8099:8080 revenuemetricsms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - revenuemetricsms/**/*
+
+  needs:
+    - job: build_revenuemetricsms
+
+build_supportms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build supportms
+      - cp supportms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - supportms/**/*
+deploy_supportms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_supportms
+  script:
+    - ls -ltr
+    - podman rmi --force supportms 
+    - podman rm -f supportms 
+    - podman build -t supportms --build-arg WAR_FILE=supportms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name supportms -p 8102:8080 supportms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - supportms/**/*
+
+  needs:
+    - job: build_supportms
+deploy_qa_supportms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_supportms
+  script:
+    - ls -ltr
+    - podman rmi --force supportms 
+    - podman rm -f supportms 
+    - podman build -t supportms --build-arg WAR_FILE=supportms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name supportms -p 8102:8080 supportms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - supportms/**/*
+
+  needs:
+    - job: build_supportms
+
+build_teamms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build teamms
+      - cp teamms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - teamms/**/*
+deploy_teamms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_teamms
+  script:
+    - ls -ltr
+    - podman rmi --force teamsms 
+    - podman rm -f teamsms
+    - podman build -t teamsms --build-arg WAR_FILE=teamms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name teamsms -p 8103:8080 teamsms  
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - teamms/**/*
+
+  needs:
+    - job: build_teamms
+deploy_qa_teamms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_teamms
+  script:
+    - ls -ltr
+    - podman rmi --force teamsms 
+    - podman rm -f teamsms
+    - podman build -t teamsms --build-arg WAR_FILE=teamms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name teamsms -p 8103:8080 teamsms  
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - teamms/**/*
+
+  needs:
+    - job: build_teamms
+
+build_timeandexpensesms:
+  stage: build
+  tags:
+    - ppmrunner
+  script: 
+      - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+      - ls -ltr
+      - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build timeandexpensesms
+      - cp timeandexpensesms/target/*war .
+  artifacts:
+      paths:
+        - '*.war'
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "ppm-qa"
+      changes:
+        - timeandexpensesms/**/*
+deploy_timeandexpensesms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_timeandexpensesms
+  script:
+    - ls -ltr
+    - podman rmi --force timeandexpensesms 
+    - podman rm -f timeandexpensesms 
+    - podman build -t timeandexpensesms --build-arg WAR_FILE=timeandexpensesms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name timeandexpensesms -p 8104:8080 timeandexpensesms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev" 
+      changes:
+        - timeandexpensesms/**/*
+
+  needs:
+    - job: build_timeandexpensesms 
+deploy_qa_timeandexpensesms:
+  stage: deploy
+  tags:
+    - ppmrunner
+ 
+  dependencies:
+    - build_timeandexpensesms
+  script:
+    - ls -ltr
+    - podman rmi --force timeandexpensesms 
+    - podman rm -f timeandexpensesms 
+    - podman build -t timeandexpensesms --build-arg WAR_FILE=timeandexpensesms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -d --network ppm_network --name timeandexpensesms -p 8104:8080 timeandexpensesms 
+
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+      changes:
+        - timeandexpensesms/**/*
+
+  needs:
+    - job: build_timeandexpensesms 
+
+
+build_post:
+  stage: deploy
+  tags:
+    - ppmrunner
+  script:
+    - |
+      #podman network create ppm_network
+      echo "Update host file"
+      container_ids=`podman ps -q`
+      for container_id in $container_ids ; 
+      do
+          container_name=`podman inspect -f '{{ .Name }}' "$container_id" | sed 's|/||'`
+          container_ip=`podman inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container_id"`
+          echo "$container_name    $container_ip" >> hosts
+      done
+      for id in $container_ids ; 
+      do
+        #container_name=`podman inspect -f '{{ .Name }}' "$container_id" | sed 's|/||'`
+        podman stop $id
+        podman cp hosts $id:/etc/hosts
+        podman start $id
+
+
+      done
+      podman logs -t 04989a655776
+      #loginctl enable-linger $USER
+      loginctl enable-linger 1002
+  when: always
+
+
+

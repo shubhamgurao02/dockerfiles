@@ -1,0 +1,19 @@
+ deploy_salesms:
+   stage: deploy
+   tags:
+     - ppmrunner
+   dependencies:
+     - build_salesms 
+   script:
+     - ls -ltr
+     - podman rmi --force salesms 
+     - podman rm -f salesms 
+     - podman build -t salesms --build-arg WAR_FILE=SalesMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e     DB_PORT=$DB_PORT -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -d --network ppm_network --name salesms -p 8111:8080 salesms 
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-dev" 
+       changes:
+         - SalesMS/**/*
+   needs:
+     - job: build_salesms

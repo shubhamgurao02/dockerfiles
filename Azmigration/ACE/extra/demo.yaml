@@ -1,0 +1,7 @@
+hello: Game
+set: new_value
+get:
+- ssh
+- bye
+- btw
+- hello babes

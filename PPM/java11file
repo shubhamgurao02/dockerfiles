@@ -1,0 +1,39 @@
+# Use an Ubuntu image as the base
+FROM ubuntu:latest
+
+# Update package list and install essential tools
+RUN apt-get update && apt-get install -y software-properties-common
+
+# Add the OpenJDK PPA repository for Java 11
+RUN add-apt-repository ppa:openjdk-r/ppa && apt-get update
+
+# Install OpenJDK 11
+RUN apt-get install -y openjdk-11-jdk
+
+# Download and install Tomcat 9
+RUN apt-get install -y curl && \
+    curl -O https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.83/bin/apache-tomcat-9.0.83.tar.gz && \
+    tar -xvf apache-tomcat-9.0.83.tar.gz -C /opt && \
+    mv /opt/apache-tomcat-9.0.83.tar.gz /opt/tomcat
+
+# Set environment variables
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
+ENV CATALINA_HOME /opt/tomcat
+ENV PATH $CATALINA_HOME/bin:$PATH
+
+ARG WAR_FILE
+COPY $WAR_FILE /usr/local/tomcat/webapps/ROOT.war
+
+# Expose the Tomcat port as a build argument with a default value of 8080
+ARG TOMCAT_PORT=8080
+EXPOSE $TOMCAT_PORT
+
+# Start Tomcat when the container starts
+CMD ["catalina.sh", "run"]
+~                   
+
+https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.83/bin/apache-tomcat-9.0.83.tar.gz
+
+
+TOMCAT_PORT
+WAR_FILE

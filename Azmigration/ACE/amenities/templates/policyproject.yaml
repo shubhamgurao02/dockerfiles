@@ -1,0 +1,9 @@
+--- 
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata: 
+  name: {{ include "amenities.cnfg.policyprj" . }}-project-policy
+spec: 
+  data: {{ .Values.policyprojectBase64 }}
+  description: "Policy Project for ACE"
+  type: policyproject

@@ -1,0 +1,15 @@
+FROM docker.io/tomcat:9.0.84-jdk11-corretto-al2
+
+
+# Update package list and install essential tools
+RUN apt-get update
+
+# Copy your WAR file into the webapps directory
+ARG WAR_FILE
+COPY $WAR_FILE /usr/local/tomcat/webapps/
+
+ARG TOMCAT_PORT
+EXPOSE 8090
+
+# Start Tomcat when the container starts
+ENTRYPOINT ["catalina.sh", "run"]

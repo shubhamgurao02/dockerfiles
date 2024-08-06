@@ -1,0 +1,10 @@
+---
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: {{ .Values.barauthname }}
+  namespace: {{ .Values.barauthnamespace }}
+spec:
+  data: {{ .Values.barauthdata }}
+  description: authentication for azure artifacts
+  type: barauth

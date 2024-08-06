@@ -1,0 +1,55 @@
+ARO Service
+3 worker nodes 
+VM's used: Esv3-series 
+Vm Spec: E4s v3 4 vCPU 32GB RAM 64GB Temprary storage
+Pricing :
+Licence : 
+Pay as you go: 374.79 $ monthly
+1 year reserved (~33% savings): $251.00 Average per month ($3,011.95 charged upfront)
+3 year reserved (~56% savings) : $164.75 Average per month ($5,931.13 charged upfront)
+
+VM:
+Pay as you go: $551.88 Average per month ($0.00 charged upfront)
+1 year reserved (~38% savings) : $342.49 Average per month ($0.00 charged upfront)
+3 year reserved (~60% savings) : $219.00 Average per month ($0.00 charged upfront) 
+
+Managed OS Disks: 3
+P20 512 GiB 2300 IOPS 150 MB/sec 
+
+3 Disks × $73.22 Per month = $219.66
+
+Control Plane Nodes:
+Type: General purpose 
+instance: D8as v4 8vCPU 32 GiB RAM 64GiB Temprary storage
+3 nodes x 1 month
+
+Pricing:
+1. Pay as you Go: $840.96 Average per month ($0.00 charged upfront)
+2. 1 year reserved (~41% savings) : $494.50 Average per month ($0.00 charged upfront)
+3. 3 year reserved (~62% savings) : $316.17 Average per month ($0.00 charged upfront)
+
+Managed OS Disks: 
+DISK SIZE:
+P30 1024 GiB 5000 IOPS 200 MB/sec
+
+3 Disks × $135.17 Per month = $405.51
+
+
+
+VM costing: 
+Region: East-US
+os : linux= rhel
+instance: 2 
+VM's used: Esv3-series 
+Vm Spec: E4s v3 4 vCPU 32GB RAM 64GB Temprary storage
+Compute (E4s v3) : 
+1. Pay as you go: $367.92 Average per month ($0.00 charged upfront)
+2. Savings plan:
+  1. 1 year savings plan (~13% discount) : $318.66 Average per month ($0.00 charged upfront)
+  2. 3 year savings plan (~32% discount) : $251.47 Average per month ($0.00 charged upfront)
+
+Reserved instances:
+1. 1 year reserved (~38% discount): $228.33 Average per month ($0.00 charged upfront)
+2. 3 year reserved (~60% discount) : $146.00 Average per month ($0.00 charged upfront)
+
+

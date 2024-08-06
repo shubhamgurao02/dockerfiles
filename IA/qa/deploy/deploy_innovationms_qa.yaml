@@ -1,0 +1,17 @@
+ deploy_innovationms_qa:
+   stage: deploy
+   tags:
+    - ppm-qa
+   dependencies:
+    - build_innovationms_qa
+   script:
+    - ls -ltr
+    - podman rmi -f innovationms
+    - podman rm -f innovationsms
+    - podman build -t innovationms --build-arg WAR_FILE=innovationms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -e DB_USER=$DB_USER  -e DB_PASSWORD=$DB_PASSWORD -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -d --network ppm_network --name innovationms --p 9205:8080 innovationsms
+   rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa"
+      changes: 
+       - innovationms/**/*
+   

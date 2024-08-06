@@ -1,0 +1,20 @@
+ deploy_qa_teamms:
+   stage: deploy
+   tags:
+     - ppm-qa
+   dependencies:
+     - build_teamms_qa
+   script:
+     - ls -ltr
+     - podman rmi --force teamsms 
+     - podman rm -f teamsms
+     - podman build -t teamsms --build-arg WAR_FILE=teamms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -e DB_USER=$DB_USER  -e DB_PASSWORD=$DB_PASSWORD -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -d --network ppm_network --name teamsms -p 8103:8080 teamsms  
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+       changes:
+         - teamms/**/*
+   needs:
+     - job: build_teamms_qa
+

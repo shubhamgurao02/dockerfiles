@@ -1,0 +1,46 @@
+apiVersion: appconnect.ibm.com/v1beta1
+kind: IntegrationServer
+metadata:
+  name: omstest
+  namespace: ace-apac
+  labels:
+    backup.appconnect.ibm.com/component: integrationserver
+spec:
+  adminServerSecure: false
+  annotations:
+    productName: "IBM App Connect Enterprise for non-production"
+    productID: ""
+    productChargedContainers: "All"
+    productMetric: "VIRTUAL_PROCESSOR_CORE"
+    productCloudpakRatio: "2:3"
+    cloudpakName: "IBM Cloud Pak for Integration"
+    cloudpakId: ""
+  
+  createDashboardUsers: true
+  designerFlowsOperationMode: disabled
+  enableMetrics: false
+  configurations: [ "oms-policy-project","oms-serverconf","azureartifacts-barauth"]
+  labels:
+    version: v1
+  license:
+    accept: true
+    license: L-QECF-MBXVLU 
+    use: CloudPakForIntegrationNonProduction
+  pod:
+    containers:
+      runtime:
+        resources:
+          limits:
+            cpu: 500m
+            memory: 2000Mi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+
+  replicas: 1
+  router:
+    timeout: 120ms
+  service:
+    endpointType: http
+    type: ClusterIP
+  version: '12.0.12.0-r1'

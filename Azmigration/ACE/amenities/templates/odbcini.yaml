@@ -1,0 +1,9 @@
+--- 
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata: 
+  name: {{ include "amenities.cnfg.odbcini" . }}-odbc
+spec: 
+  data: {{ .Values.odbcBase64 }}
+  description: "Files for configuring Oracle"
+  type: odbc

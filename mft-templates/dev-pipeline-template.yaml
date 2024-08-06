@@ -1,0 +1,23 @@
+stages:
+- stage: Deploy_DEV
+  jobs:
+  - deployment: Deploy
+    workspace:
+      clean: all
+    environment: 'MFT DEV'
+    strategy:
+     runOnce:
+       deploy:        
+         steps:
+         - checkout: self
+           clean: true
+           persistCredentials: true
+         - checkout: templates
+         
+         - script: |
+             ls -ltr
+             cp pipeline-templates/mft-templates/* .
+             cp -r mft/* .
+             ls -ltr        
+             ansible-playbook mft_automation.yaml --extra-vars "qm=AGNT.MFT.Q01.MFT01"
+           displayName: 'Deploy to $(env)'

@@ -1,0 +1,48 @@
+import requests
+from transformers import RagTokenizer, RagRetriever, RagTokenForGeneration
+
+# Initialize the Weaviate URL for querying
+weaviate_url = "http://your-weaviate-server:port/v1/graphql"  # Replace with your Weaviate server URL
+
+# Initialize the RAG components
+tokenizer = RagTokenizer.from_pretrained("facebook/rag-token-base")
+retriever = RagRetriever.from_pretrained("facebook/rag-token-base")
+model = RagTokenForGeneration.from_pretrained("facebook/rag-token-base", retriever=retriever)
+
+# User query
+user_query = "Who is the president of France?"
+
+# Query Weaviate to retrieve relevant entities
+weaviate_query = f"""
+{
+  Get {
+    Person(where: {{
+      name: {{vector: {{
+        mode: "EXPLORE", 
+        exploreWithin: {{
+          vector: [{user_query}] 
+        }}
+      }} }}
+    }}) {
+      name
+    }
+  }
+}
+"""
+
+response = requests.post(weaviate_url, json={"query": weaviate_query})
+weaviate_data = response.json()
+
+# Extract relevant entity names from Weaviate's response
+entities = [result["name"] for result in weaviate_data["data"]["Get"]["Person"]]
+
+# Prepare the input for the RAG model
+input_text = user_query + " " + " ".join(entities)  # Concatenate user query and entity names
+input_dict = tokenizer.prepare_seq2seq_batch(input_text, return_tensors="pt")
+
+# Generate a response using the RAG model
+output_ids = model.generate(input_dict["input_ids"], max_length=50, num_return_sequences=1)
+generated_response = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+
+# Print the generated response
+print("Generated Response:", generated_response)

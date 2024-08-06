@@ -1,0 +1,58 @@
+
+Points consider for manual
+
+1) repository name
+2) pipelien name
+3) run ID 
+4) status
+5) branch
+6) trigger reason
+7) start time
+8) requestor
+9) env
+10) ci message
+11) state
+12) result
+
+Points consider for Ci
+
+1) repository name
+2) pipelien name
+3) run ID 
+4) status
+5) branch
+6) trigger reason
+7) start time
+8) requestor
+9) env
+10) finish time
+11) state
+12) ci message
+13) result
+
+file1.write(str(pipeline_name) + "," + str(run['id']) + "," + str(env_name) + "," + str(env['startTime']) + "," + str(env['finishTime']) + "," + str(env['state']) + "," + str(env['result']) + "\n")
+print("hi",run['triggerInfo']['ci.sourceBranch'])
+print("hello",run['triggerInfo']['ci.message'])
+print("repo", run['repository']['name'])
+print("repo", run['repository']['name'])
+print(f"SHUBHAM Pipeline Name: {pipeline_name}, Run ID: {run['id']}, Status: {status}, Start Time: {start_time} ,Source branch {run['sourceBranch']}, reason {run['reason']}, requested for {run['requestedBy']['displayName']}")
+
+file1.write(str(pipeline_name) + "," + str(run['id']) + "," + str(env_name) + "," + str(env['startTime']) + "," + str(env['finishTime']) + "," + str(env['state']) + "," + str(env['result']) + +"\n")
+
+tables
+ pipeline name ,env , run ID , status , branch , repo name , trigger name , start time , requestor , finish time , state , result
+file1.write(str(pipeline_name) + "," + str(env_name) + "," + str(run['id']) + "," +  str(env['startTime']) + "," + str(env['finishTime']) + "," + str(env['state']) + "," + str(env['result']) + "\n")
+
+print(f"SHUBHAM Pipeline Name: {pipeline_name}, Run ID: {run['id']}, Status: {status}, Start Time: {start_time} ,Source branch {run['sourceBranch']}, reason {run['reason']}, requested for {run['requestedBy']['displayName']}")
+file1.write(str(pipeline_name) + "," + str(env_name) + "," + str(run['id']) + "," +  str(env['startTime']) + "," + str(env['finishTime']) + "," + state + "," + result + "\n")
+
+#file1.write(str(pipeline_name) + "," + str(env_name) + "," + str(run['id']) + "," +  str(env['startTime']) + "," + str(env['finishTime']) + "," + str(env['state']) + "," + str(env['result']) + "\n")
+branch=run['triggerInfo']['ci.sourceBranch']
+requestor=run['requestedFor']['displayName']
+reason=run['reason']
+
+
+file1.write(str(pipeline_name) + "," + str(run['id']) + "," + str(env_name) + "," + str(env['startTime']) + "," + str(env['finishTime']) + "," + str(env['state']) + "," + str(env['result']) + "," +  branch + "," + requestor + "," + reason + "\n")
+
+
+#file1.write(str(pipeline_name) + "," + str(run['id']) + "," + str(env_name) + "," +  str(env['startTime']) + "," + finishTime + "," + state + "," + result + "," +  branch + "," + requestor + "," + reason + "\n")

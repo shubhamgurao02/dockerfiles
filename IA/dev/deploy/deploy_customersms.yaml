@@ -1,0 +1,19 @@
+ deploy_customersms:
+   stage: deploy
+   tags:
+     - ppmrunner 
+   dependencies:
+     - build_customersms 
+   script:
+     - ls -ltr
+     - podman rmi --force customersms 
+     - podman rm -f customersms 
+     - podman build -t customersms --build-arg WAR_FILE=customersms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e     DB_PORT=$DB_PORT -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -d --network ppm_network --name customersms -p 8091:8080 customersms 
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-dev"
+       changes:
+         - customersms/**/*
+   needs:
+     - job: build_customersms

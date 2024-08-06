@@ -1,0 +1,69 @@
+build:
+   stage: build
+   tags:
+     - runner
+   script: 
+     - podman pull docker.io/shubhgdocker/pbc-ppm-nodejs-16.13.0:edge
+     - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-ppm-nodejs-16.13.0:edge build .
+     - ls -ltr 
+   artifacts:
+     paths:
+       - build
+   only:
+     - ppm-dev
+     
+build_qa:
+  stage: build
+  tags:
+    - ppm-qa-frontend 
+  script: 
+    - podman pull docker.io/shubhgdocker/pbc-ppm-nodejs-16.13.0:edge
+    - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-ppm-nodejs-16.13.0:edge build .
+    - ls -ltr 
+  artifacts:
+    paths:
+      - build
+  only:
+    - ppm-qa
+    
+deploy:
+   stage: deploy
+   tags:
+     - runner
+   dependencies:
+         - build 
+   script:
+     - podman rmi --force react_app
+     - podman rm -f react_app
+     - podman build -t react_app -f react_deploy .
+     - podman run -d --name react_app --network ppm_network -p 3001:443 react_app
+     - echo "Hi"
+     - podman ps -a 
+     - pwd 
+     - hostname
+     - id
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-dev" 
+   needs:
+     - job: build
+
+deploy_qa:
+  stage: deploy
+  tags:
+    - ppm-qa-frontend 
+  dependencies:
+        - build_qa 
+  script:
+    #- podman network create ppm_network
+    - podman rmi --force react_app
+    - podman rm -f react_app
+    - podman build -t react_app -f react_deploy .
+    - podman run -d --name react_app --network ppm_network -p 3001:443 react_app
+    - podman ps -a 
+    - pwd 
+    - hostname
+    - id
+  rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+  needs:
+    - job: build_qa

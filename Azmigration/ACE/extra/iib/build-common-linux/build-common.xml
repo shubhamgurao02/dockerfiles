@@ -1,0 +1,3021 @@
+<!--
+This file is copyright of Prolifics - (c) Prolifics 2013. All rights reserved. You are not permitted to make copy, modify, or redistribute this file.
+
+See the readme.txt file for further terms and conditions.
+-->
+
+<project name="build-common">
+
+	<target name="-applySystemChanges" depends="">
+
+		<if>
+			<isset property="stateStore.path" />
+			<then>
+
+				<!-- Get systemId from stateStore.path -->
+
+				<propertyregex property="systemId" override="true" input="${stateStore.path}" regexp="(.*)/" select="\1" defaultValue="${stateStore.path}" />
+
+				<!-- Read state from state store -->
+
+				<antcallback target="-readSystemState">
+					<param name="systemId" value="${systemId}" />
+					<param name="responseFile" value="${BUILD_LOGS}/retrieveSystemProperties.log" />
+				</antcallback>
+
+				<!-- Create temp json -->
+
+				<echo message="Duplicate json file to create temp version for updating" />
+
+				<copy file="${BUILD_LOGS}/retrieveSystemProperties.log" tofile="${BUILD_TMP}/updateStateStoreJson.json" overwrite="true" />
+
+				<!-- Make changes to json -->
+
+				<antcallback target="-updateStateStoreJson">
+					<param name="stateStoreJsonFile" value="${BUILD_TMP}/updateStateStoreJson.json" />
+				</antcallback>
+
+				<!-- Update State Store with updated json -->
+
+				<antcallback target="-updateSystemState">
+					<param name="systemId" value="${systemId}" />
+					<param name="updateJsonFile" value="${BUILD_TMP}/updateStateStoreJson.json" />
+					<param name="responseFile" value="${BUILD_LOGS}/updateStateStore.log" />
+				</antcallback>
+
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-updateSystemState" depends="">
+
+		<echo message="Going to update system json in state store using systemId=${systemId} and updateJsonFile=${updateJsonFile}" />
+
+		<!-- Load updateJsonFile -->
+
+		<loadfile property="updateJson" srcFile="${updateJsonFile}" />
+
+		<!-- Get json from state store -->
+
+		<antcall target="-callUrl">
+			<param name="soapUrl" value="${stateStore.url}" />
+			<param name="soapService" value="/query?dbname=prostore&amp;colname=pbcdata" />
+			<param name="soapParameters" value="-X POST -d $'{ &quot;systemId&quot;: &quot;${systemId}&quot; }\n${updateJson}'" />
+			<param name="responseFile" value="${responseFile}" />
+			<param name="responseErrorLabel" value="Update system in state store response file (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="-loadProperties" depends="">
+
+		<if>
+			<isset property="stateStore.path" />
+			<then>
+
+				<!-- Get systemId from stateStore.path -->
+
+				<propertyregex property="systemId" override="true" input="${stateStore.path}" regexp="(.*)/" select="\1" defaultValue="${stateStore.path}" />
+
+				<!-- Read state from state store -->
+
+				<antcallback target="-readSystemState">
+					<param name="systemId" value="${systemId}" />
+					<param name="responseFile" value="${BUILD_LOGS}/retrieveSystemProperties.log" />
+				</antcallback>
+
+				<!-- Parse json to get properties - call task that is local to the PBC plugin -->
+
+				<loadfile property="systemPropertiesJson" srcFile="${BUILD_LOGS}/retrieveSystemProperties.log" />
+
+				<echo message="Retrieved system properties from state store: ${systemPropertiesJson}" />
+
+				<antcallback target="-extractPropertiesFromJson" return="propertiesList">
+					<param name="systemPropertiesJson" value="${systemPropertiesJson}" />
+				</antcallback>
+
+				<echo message="propertiesList = ${propertiesList}" />
+
+				<!-- Write out to properties file from returned list -->
+
+				<for list="${propertiesList}" param="propertyPair" delimiter=" ">
+					<sequential>
+
+						<propertyregex property="name" override="true" input="@{propertyPair}" regexp="(.*)=" select="\1" />
+						<propertyregex property="value" override="true" input="@{propertyPair}" regexp="=(.*)" select="\1" />
+
+						<echo file="${BUILD_TMP}/loadProperties.properties" append="true">${name}=${value}${line.separator}</echo>
+
+					</sequential>
+				</for>
+
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-readSystemState" depends="">
+
+		<echo message="Going to retrieve system json from state store using systemId=${systemId}" />
+
+		<!-- Get json from state store -->
+
+		<antcall target="-callUrl">
+			<param name="soapUrl" value="${stateStore.url}" />
+			<param name="soapService" value="/query?dbname=prostore&amp;colname=pbcdata" />
+			<param name="soapParameters" value="-X POST -d '{ &quot;systemId&quot;: &quot;${systemId}&quot; }'" />
+			<param name="responseFile" value="${responseFile}" />
+			<param name="responseErrorLabel" value="Retrieve system properties from state store response file (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="uploadForDeploy" depends="">
+
+		<if>
+			<not>
+				<available file="${BUILD_TMP}/noUpload.flag" />
+			</not>
+			<then>
+
+				<startBuildActivity label="Upload artifacts for deployment" activityIdProperty="uploadForDeploy" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<propertyregex property="componentNameSafe" override="true" input="${UCD_COMPONENT}" regexp=" " replace="%20" defaultValue="${UCD_COMPONENT}" />
+				<propertyregex property="componentVersionSafe" override="true" input="${buildLabel}" regexp=" " replace="%20" defaultValue="${buildLabel}" />
+
+				<var name="componentName" value="${UCD_COMPONENT}" />
+				<var name="componentVersion" value="${buildLabel}" />
+
+				<var name="componentBase" value="${BUILD_HOME}/${UCD_BASE_DIR}" />
+				<var name="includeFiles" value="${UCD_INCLUDE_FILES}" />
+				<var name="excludeFiles" value="${UCD_EXCLUDE_FILES}" />
+
+				<!-- Create new component version -->
+
+				<echo message="Create component version via REST endpoint..." />
+
+				<antcall target="-callUrlBasicAuth">
+					<param name="soapUrl" value="${UCD_URL}" />
+					<param name="soapService" value="/cli/version/createVersion?component=${componentNameSafe}&amp;name=${componentVersionSafe}" />
+					<param name="soapParameters" value="-X POST" />
+					<param name="soapUserId" value="${UCD_USER_ID}" />
+					<param name="soapPassword" value="${UCD_PASSWORD}" />
+					<param name="responseFile" value="${BUILD_LOGS}/${componentVersion}.ucdCreateVersionResp.xml" />
+					<param name="responseErrorLabel" value="Create component version ${UCD_COMPONENT} (${componentVersion}) response file (with error description)." />
+				</antcall>
+
+				<loadfile property="responseFileText" srcFile="${BUILD_LOGS}/${componentVersion}.ucdCreateVersionResp.xml" />
+
+				<!-- Get ID from new component version response -->
+
+				<script language="javascript">
+					<![CDATA[
+			json = project.getProperty("responseFileText");
+			var struct = eval("(" + json + ")");
+			// now accessing the data in the object
+			versionId = struct.id; 
+			echo = project.createTask("echo");
+			echo.setMessage("Javascript found this:" + versionId);
+			echo.perform(); 
+			project.setProperty("versionId", versionId)
+		    ]]>
+				</script>
+
+				<echo message="Returned id = ${versionId}" />
+
+				<!-- Create upload command string -->
+
+				<var name="uploadCommandString" value="-component '${componentName}' -version '${componentVersion}' -base '${componentBase}'" />
+
+				<for param="includeFilePattern" list="${includeFiles}" delimiter=" ">
+					<sequential>
+
+						<var name="tempString" unset="true" />
+						<var name="tempString" value="${uploadCommandString}" />
+						<var name="uploadCommandString" unset="true" />
+						<var name="uploadCommandString" value="${tempString} -include '@{includeFilePattern}'" />
+
+					</sequential>
+				</for>
+
+				<for param="excludeFilePattern" list="${excludeFiles}" delimiter=" ">
+					<sequential>
+
+						<var name="tempString" unset="true" />
+						<var name="tempString" value="${uploadCommandString}" />
+						<var name="uploadCommandString" unset="true" />
+						<var name="uploadCommandString" value="${tempString} -exclude '@{excludeFilePattern}'" />
+
+					</sequential>
+				</for>
+
+				<!-- Upload artifacts to new version -->
+
+				<antcall target="-ucdCommand">
+
+					<param name="ucdCommand" value="addVersionFiles" />
+					<param name="ucdArgs" value="${uploadCommandString}" />
+					<param name="logFileName" value="addVersionFilesResp.xml" />
+
+				</antcall>
+
+				<!-- Add build link to component version -->
+
+				<antcall target="-ucdCommand">
+
+					<param name="ucdCommand" value="addVersionLink" />
+					<param name="ucdArgs" value="-component '${componentName}' -version '${componentVersion}' -linkName 'Assembly Build (in Build Tool)' -link '${buildLink}'" />
+					<param name="logFileName" value="addLinkToVersionResp.xml" />
+
+				</antcall>
+
+				<!-- Add component version link to build -->
+
+				<linkPublisher userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" repositoryAddress="${repositoryAddress}" buildResultUUID="${buildResultUUID}" verbose="true" label="Component Version (in UCD)" url="${UCD_URL}/#version/${versionId}" />
+
+				<!-- If a default status has been provided, add that to the version -->
+
+				<if>
+					<isset property="UCD_COMPONENT_DEFAULT_STATUS" />
+					<then>
+
+						<!-- Add status to component version -->
+
+						<antcall target="-ucdCommand">
+
+							<param name="ucdCommand" value="addVersionStatus" />
+							<param name="ucdArgs" value="-component '${componentName}' -version '${componentVersion}' -status '${UCD_COMPONENT_DEFAULT_STATUS}'" />
+							<param name="logFileName" value="addStatusToVersionResp.xml" />
+
+						</antcall>
+
+					</then>
+				</if>
+
+			</then>
+		</if>
+	</target>
+
+	<target name="requestProcess" depends="">
+
+		<startBuildActivity label="Request process execution" activityIdProperty="requestProcessExecution" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- for each environment to run the process in -->
+
+		<for param="environment" list="${UCD_ENVS.list}" delimiter=" ">
+			<sequential>
+
+				<startBuildActivity label="Request ${UCD_PROCESS} process in @{environment} environment." parentActivityId="${requestProcessExecution}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<!-- Prepare application process request -->
+
+				<copy file="../build-common-linux/udclient/template/requestApplicationProcessTemplate.json" tofile="${BUILD_TMP}/requestApplicationProcess@{environment}.json" />
+				<replace file="${BUILD_TMP}/requestApplicationProcess@{environment}.json" token="@APPLICATION@" value="${UCD_APP}" />
+				<replace file="${BUILD_TMP}/requestApplicationProcess@{environment}.json" token="@APPLICATION_PROCESS@" value="${UCD_PROCESS}" />
+				<replace file="${BUILD_TMP}/requestApplicationProcess@{environment}.json" token="@ENVIRONMENT@" value="@{environment}" />
+
+
+				<!-- Request application process -->
+
+				<antcall target="-ucdCommand">
+
+					<param name="ucdCommand" value="requestApplicationProcess" />
+					<param name="ucdArgs" value="${BUILD_TMP}/requestApplicationProcess@{environment}.json" />
+					<param name="logFileName" value="requestApplicationProcessResp.xml" />
+
+				</antcall>
+
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="promoteDeliver">
+
+		<startBuildActivity label="Promote from ${PROMOTE_SOURCE_STREAM} to ${PROMOTE_TARGET_STREAM}" activityIdProperty="promoteChanges" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<var name="SCM_DELIVER_STREAM_LOG_FILE" value="${BUILD_LOGS}/scm-deliver-stream.log" />
+
+		<echo message="About to run the deliver command to promote ${PROMOTE_COMPONENTS.list} from ${PROMOTE_SOURCE_STREAM} to ${PROMOTE_TARGET_STREAM}" />
+
+		<echo message="Logging output to ${SCM_DELIVER_STREAM_LOG_FILE}" />
+
+		<for param="component" list="${PROMOTE_COMPONENTS.list}" delimiter=",">
+			<sequential>
+
+				<startBuildActivity label="Promote component @{component}" parentActivityId="${promoteChanges}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_DELIVER_STREAM_LOG_FILE}.@{component}" failonerror="false" resultProperty="returnCode">
+					<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+					<arg value="deliver" />
+					<arg value="-r" />
+					<arg value="${repositoryAddress}" />
+					<arg value="-u" />
+					<arg value="${RTC_USER_ID}" />
+					<arg value="-P" />
+					<arg value="${rtcPassword}" />
+					<arg value="-C" />
+					<arg value="@{component}" />
+					<arg value="-s" />
+					<arg value="${PROMOTE_SOURCE_STREAM}" />
+					<arg value="-t" />
+					<arg value="${PROMOTE_TARGET_STREAM}" />
+				</exec>
+
+				<echo message="exec returnCode = ${returnCode}" />
+
+				<if>
+					<available file="scm-deliver-stream.log.@{component}" filepath="${BUILD_LOGS}" />
+					<then>
+						<antcall target="-checkSCMErrors">
+							<param name="fileToCheck" value="${SCM_DELIVER_STREAM_LOG_FILE}.@{component}" />
+							<param name="fileToCheckLabel" value="SCM promote deliver log file for @{component} component" />
+						</antcall>
+					</then>
+				</if>
+
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="-clearWorkspaceForImport">
+
+		<startBuildActivity label="Clearing the workspace" activityIdProperty="clearWorkspace" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- ...Initialize specific folders to ignore for this import -->
+
+		<if>
+			<isset property="ignoreProjects.list" />
+			<then>
+
+				<var name="tempIgnoreProjectsList" value="${ignoreProjects.list}" />
+				<var name="ignoreProjects.list" unset="true" />
+				<var name="ignoreProjects.list" value="${defaultIgnoreProjects} ${tempIgnoreProjectsList}" />
+
+			</then>
+			<else>
+
+				<var name="ignoreProjects.list" value="${defaultIgnoreProjects}" />
+
+			</else>
+		</if>
+
+		<!-- Write all projects to tmp project list -->
+
+		<for param="dirName">
+			<path>
+				<dirset dir="${BUILD_SOURCE}">
+					<include name="*" />
+					<exclude name=".jazz5" />
+				</dirset>
+			</path>
+			<sequential>
+
+				<echo file="${TMP_PROJECT_LIST}" append="true">@{dirName}${line.separator}</echo>
+
+			</sequential>
+		</for>
+
+		<!-- Delete all projects except for ignore projects -->
+
+		<for param="dirName">
+			<path>
+				<dirset dir="${BUILD_SOURCE}">
+					<include name="*" />
+					<exclude name=".jazz5" />
+				</dirset>
+			</path>
+			<sequential>
+
+				<!-- Check to see if this project appears in ignore list -->
+
+				<var name="dirToCopy" unset="true" />
+				<basename property="dirToCopy" file="@{dirName}" />
+
+				<var name="ignoreThisProject" unset="true" />
+
+				<for list="${ignoreProjects.list}" delimiter=" " param="ignoreProject">
+					<sequential>
+
+						<if>
+							<equals arg1="${dirToCopy}" arg2="@{ignoreProject}" />
+							<then>
+								<var name="ignoreThisProject" value="true" />
+							</then>
+						</if>
+
+					</sequential>
+				</for>
+
+				<!-- Delete project if not in ignore list -->
+
+				<if>
+					<not>
+						<equals arg1="${ignoreThisProject}" arg2="true" />
+					</not>
+					<then>
+
+						<echo message="delete dir=@{dirName}" />
+
+						<delete includeemptydirs="true">
+							<fileset dir="@{dirName}" includes="**/*" />
+						</delete>
+					</then>
+				</if>
+
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="-moveFetchedChangesToWorkspace">
+
+		<startBuildActivity label="Move changes to workspace" activityIdProperty="moveToWorkspace" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- ...Initialize specific folders to ignore for this import -->
+
+		<if>
+			<isset property="ignoreProjects.list" />
+			<then>
+
+				<var name="tempIgnoreProjectsList" value="${ignoreProjects.list}" />
+				<var name="ignoreProjects.list" unset="true" />
+				<var name="ignoreProjects.list" value="${defaultIgnoreProjects} ${tempIgnoreProjectsList}" />
+
+			</then>
+			<else>
+
+				<var name="ignoreProjects.list" value="${defaultIgnoreProjects}" />
+
+			</else>
+		</if>
+
+		<!-- Copy all projects except for ignore projects, ignore folder and scm metadata/project folders -->
+
+		<for param="dirName">
+
+			<path>
+				<dirset dir="${FETCH_CHANGES_PATH}/${sourceRootPath}">
+					<include name="*" />
+					<exclude name=".jazz5" />
+					<exclude name=".svn" />
+					<exclude name=".git" />
+					<exclude name=".metadata" />
+				</dirset>
+			</path>
+
+			<sequential>
+
+				<!-- Check to see if this project appears in ignore list -->
+
+				<var name="dirToCopy" unset="true" />
+				<basename property="dirToCopy" file="@{dirName}" />
+
+				<var name="ignoreThisProject" unset="true" />
+
+				<for list="${ignoreProjects.list}" delimiter=" " param="ignoreProject">
+					<sequential>
+
+						<if>
+							<equals arg1="${dirToCopy}" arg2="@{ignoreProject}" />
+							<then>
+								<var name="ignoreThisProject" value="true" />
+							</then>
+						</if>
+
+					</sequential>
+				</for>
+
+				<echo message="copy dir=${dirToCopy}" />
+
+				<!-- Copy folder if not in ignore list -->
+
+				<if>
+					<not>
+						<equals arg1="${ignoreThisProject}" arg2="true" />
+					</not>
+					<then>
+
+						<echo message="Copying to ${BUILD_SOURCE}/${targetRootPath}/${dirToCopy}" />
+
+						<copy todir="${BUILD_SOURCE}/${targetRootPath}/${dirToCopy}">
+							<fileset dir="@{dirName}">
+								<exclude name="**/${ignoreFolder}/**" />
+								<exclude name="**/${ignoreFolder}" />
+							</fileset>
+						</copy>
+
+						<!-- if the targetRootPath is '.' or ' ' or '' or '/' or '\' then check for projects to share -->
+
+						<if>
+							<or>
+								<equals arg1="${targetRootPath}" arg2="." />
+								<equals arg1="${targetRootPath}" arg2=" " />
+								<equals arg1="${targetRootPath}" arg2="" />
+								<equals arg1="${targetRootPath}" arg2="/" />
+								<equals arg1="${targetRootPath}" arg2="\" />
+							</or>
+							<then>
+								<echo message="No targetRootPath so check to share subdirectories" />
+
+								<!-- Add project to share list if not in tmp projects list -->
+
+								<antcall target="-checkShareProject">
+									<param name="projectToCheck" value="${BUILD_SOURCE}/${dirToCopy}" />
+								</antcall>
+
+							</then>
+							<else>
+								<echo message="There is a targetRootPath so check to share that (note it will only get shared the first time)" />
+
+								<!-- Add project to share list if not in tmp projects list -->
+
+								<antcall target="-checkShareProject">
+									<param name="projectToCheck" value="${BUILD_SOURCE}/${targetRootPath}" />
+								</antcall>
+
+							</else>
+						</if>
+
+					</then>
+				</if>
+
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="-ucdCommand">
+
+		<echo message="Executing ucd command: ./udclient -weburl ${UCD_URL} -username ${UCD_USER_ID} -password ******** ${ucdCommand} ${ucdArgs}" />
+
+		<exec dir="." executable="printenv" output="${BUILD_LOGS}/printenv.log">
+		</exec>
+
+		<exec dir="${COMMON_UCD}/" executable="./udclient" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+			<env key="JAVA_HOME" value="${JAVA_HOME}" />
+			<arg line="-weburl ${UCD_URL} -username ${UCD_USER_ID} -password ${UCD_PASSWORD} ${ucdCommand} ${ucdArgs}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkUCDErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="UCD log for ${ucdCommand} command with ${ucdArgs} arguments (with error description)." />
+			<param name="returnCode" value="${returnCode}" />
+		</antcall>
+
+	</target>
+
+	<target name="-checkUCDErrors" depends="">
+
+		<!-- Fail if no file exists to check - probably indicates infrastructure error -->
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+				<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+			</then>
+		</if>
+
+		<!-- Check for individual error messages -->
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="java.lang.Exception:" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="You must have JAVA_HOME set" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Request error:" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="MissingRequiredParameterException" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="No such file or directory" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<or>
+				<isset property="failResponse" />
+				<not>
+					<equals arg1="${returnCode}" arg2="0" />
+				</not>
+			</or>
+			<then>
+
+				<!-- Fail if error message found -->
+
+				<echo message="Response is not OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+
+				<fail message="Error message returned in ${fileToCheck}. Review contents of this file in Logs." />
+
+			</then>
+			<else>
+
+				<!-- Otherwise all OK -->
+
+				<echo message="Response is OK" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-fileDeploy" depends="">
+
+		<exec dir="${COMMON_SUBSCRIPTS}/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+			<arg line="fileDeploy.sh" />
+			<arg value="${sourcePath}" />
+			<arg value="${targetUser}" />
+			<arg value="${targetPassword}" />
+			<arg value="${targetHost}" />
+			<arg value="${targetPath}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkTransferErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="Deploy log for ${sourcePath} deployment to ${targetHost} (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="-folderDeploy" depends="">
+
+		<exec dir="${COMMON_SUBSCRIPTS}/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+			<arg line="folderDeploy.sh" />
+			<arg value="${sourcePath}" />
+			<arg value="${targetUser}" />
+			<arg value="${targetPassword}" />
+			<arg value="${targetHost}" />
+			<arg value="${targetPath}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkTransferErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="Deploy log for ${sourcePath} deployment to ${targetHost} (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="-folderOwnershipChange" depends="">
+
+		<if>
+			<or>
+				<equals arg1="${isRecursive}" arg2="true" />
+				<equals arg1="${isRecursive}" arg2="TRUE" />
+				<equals arg1="${isRecursive}" arg2="y" />
+				<equals arg1="${isRecursive}" arg2="Y" />
+			</or>
+			<then>
+				<exec dir="${COMMON_SUBSCRIPTS}/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+					<arg line="folderOwnershipChangeRecursive.sh" />
+					<arg value="${targetUser}" />
+					<arg value="${targetPassword}" />
+					<arg value="${targetHost}" />
+					<arg value="${targetPath}" />
+					<arg value="${ownerUser}" />
+					<arg value="${ownerGroup}" />
+				</exec>
+			</then>
+			<else>
+				<exec dir="${COMMON_SUBSCRIPTS}/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+					<arg line="folderOwnershipChange.sh" />
+					<arg value="${targetUser}" />
+					<arg value="${targetPassword}" />
+					<arg value="${targetHost}" />
+					<arg value="${targetPath}" />
+					<arg value="${ownerUser}" />
+					<arg value="${ownerGroup}" />
+				</exec>
+			</else>
+		</if>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkTransferErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="Ownership change log for ${targetPath} on ${targetHost} (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="-folderPermissionsChange" depends="">
+
+		<if>
+			<or>
+				<equals arg1="${isRecursive}" arg2="true" />
+				<equals arg1="${isRecursive}" arg2="TRUE" />
+				<equals arg1="${isRecursive}" arg2="y" />
+				<equals arg1="${isRecursive}" arg2="Y" />
+			</or>
+			<then>
+				<exec dir="${COMMON_SUBSCRIPTS}/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+					<arg line="folderPermissionsChangeRecursive.sh" />
+					<arg value="${targetUser}" />
+					<arg value="${targetPassword}" />
+					<arg value="${targetHost}" />
+					<arg value="${targetPath}" />
+					<arg value="${permissions}" />
+				</exec>
+			</then>
+			<else>
+				<exec dir="${COMMON_SUBSCRIPTS}/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+					<arg line="folderPermissionsChange.sh" />
+					<arg value="${targetUser}" />
+					<arg value="${targetPassword}" />
+					<arg value="${targetHost}" />
+					<arg value="${targetPath}" />
+					<arg value="${permissions}" />
+				</exec>
+			</else>
+		</if>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkTransferErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="Permissions change log for ${targetPath} on ${targetHost} (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="-fileRetrieve" depends="">
+
+		<exec dir="${COMMON_SUBSCRIPTS}/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+			<arg line="fileRetrieve.sh" />
+			<arg value="${sourceUser}" />
+			<arg value="${sourcePassword}" />
+			<arg value="${sourceHost}" />
+			<arg value="${sourcePath}" />
+			<arg value="${targetPath}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkTransferErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="File retrieval log for ${sourcePath} from ${targetHost} (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="-checkTransferErrors" depends="">
+
+		<!-- Fail if no file exists to check - probably indicates infrastructure error -->
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+				<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+			</then>
+		</if>
+
+		<!-- Check for individual error messages -->
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Operation not permitted" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Permission denied" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="invalid user" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="invalid group" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Connection refused" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="lost connection" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="No such file or directory" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="not a regular file" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="ambiguous target" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Name or service not known" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="invalid command name" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<isset property="failResponse" />
+			<then>
+
+				<!-- Fail if error message found -->
+
+				<echo message="Response is not OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+
+				<fail message="Error message returned in ${fileToCheck}. Review contents of this file in Logs." />
+
+			</then>
+			<else>
+
+				<!-- Otherwise all OK -->
+
+				<echo message="Response is OK" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-executeRemoteAnt" depends="">
+
+		<echo message="Executing ant file: ${remoteAntPath} -lib ${antLibs} -f ${antFilePath} ${antTarget} ${antParams}" />
+
+		<sshexec host="${targetHost}" username="${targetUser}" password="${targetPassword}" command="${remoteAntPath} -lib ${antLibs} -f ${antFilePath} ${antTarget} ${antParams}" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode" failonerror="false" />
+
+		<echo message="sshexec returnCode = ${returnCode}" />
+
+		<antcall target="-checkExecuteAntErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="Execution log of remote ant script ${antFilePath} (with error description)." />
+		</antcall>
+
+	</target>
+
+	<target name="-checkExecuteAntErrors" depends="">
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+				<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+			</then>
+
+		</if>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Could not create task or type of type" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="No such file or directory" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Unknown argument:" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="ERROR" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Build failed" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="BUILD FAILED" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<isset property="failResponse" />
+			<then>
+				<echo message="Result is not OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+				<fail message="Error message in ${fileToCheck}. Review contents of this file in Logs." />
+
+			</then>
+			<else>
+				<echo message="Result is OK" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-ssh" depends="">
+
+		<echo message="Executing remote command on ${targetHost} using ssh - command: ${command}" />
+
+		<sshexec host="${targetHost}" username="${targetUser}" password="${targetPassword}" command="${command}" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode" failonerror="false" />
+
+		<echo message="sshexec returnCode = ${returnCode}" />
+
+		<antcall target="-checkSSHErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="Executing remote ssh command (with error description)." />
+		</antcall>
+	</target>
+
+	<target name="-sshWithKeyfile" depends="">
+
+		<echo message="Executing remote command on ${targetHost} using ssh with keyfile (${keyfile}) - command: ${command}" />
+
+		<exec dir="${COMMON_PROJECT}/script/" executable="/usr/bin/expect" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+			<arg line="sshRemoteCommand.sh" />
+			<arg value="${targetUser}" />
+			<arg value="${keyfile}" />
+			<arg value="${targetHost}" />
+			<arg value="${command}" />
+		</exec>
+
+		<echo message="sshexec returnCode = ${returnCode}" />
+
+		<antcall target="-checkSSHErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+			<param name="fileToCheckLabel" value="Executing remote ssh command (with error description)." />
+		</antcall>
+	</target>
+
+	<target name="-makeRemoteFileExecutable" depends="">
+
+		<antcall target="-ssh">
+
+			<param name="targetHost" value="${targetHost}" />
+			<param name="targetUser" value="${targetUser}" />
+			<param name="targetPassword" value="${targetPassword}" />
+			<param name="command" value="sudo chmod +x ${file}" />
+			<param name="logFileName" value="${logFileName}" />
+
+		</antcall>
+
+	</target>
+
+	<target name="-checkSSHErrors" depends="">
+
+		<!-- Fail if no file exists to check - probably indicates infrastructure error -->
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+				<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+			</then>
+		</if>
+
+		<!-- Check for individual error messages -->
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Permission denied" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Remote command failed" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<isset property="failResponse" />
+			<then>
+
+				<!-- Fail if error message found -->
+
+				<echo message="Result is not OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+
+				<fail message="Error message in ${fileToCheck}. Review contents of this file in Logs." />
+
+			</then>
+			<else>
+
+				<!-- Otherwise all OK -->
+
+				<echo message="Result is OK" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-wsAdminCommand" depends="">
+
+		<echo message="Executing command ${wsAdminCommand} on ${wsAdminHost}:${wsAdminPort}" />
+
+		<exec executable="sudo" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode">
+			<arg value="${WAS_RUNTIME}/bin/wsadmin.sh" />
+			<arg value="-p" />
+			<arg value="../build-common-linux/props/soap_override.props" />
+			<arg value="-conntype" />
+			<arg value="SOAP" />
+			<arg value="-port" />
+			<arg value="${wsAdminPort}" />
+			<arg value="-host" />
+			<arg value="${wsAdminHost}" />
+			<arg value="-user" />
+			<arg value="${wsAdminUser}" />
+			<arg value="-password" />
+			<arg value="${wsAdminPassword}" />
+			<arg value="-lang" />
+			<arg value="jython" />
+			<arg value="-c" />
+			<arg value="${wsAdminCommand}" />
+			<arg value="-tracefile" />
+			<arg value="${BUILD_LOGS}/trace.${logFileName}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<and>
+				<available file="${logFileName}" filepath="${BUILD_LOGS}" />
+				<not>
+					<equals arg1="${ignoreErrors}" arg2="true" />
+				</not>
+			</and>
+			<then>
+				<antcall target="-checkWsAdminErrors">
+					<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+					<param name="fileToCheckLabel" value="${logFileLabel}" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-wsAdminScript" depends="">
+
+		<echo message="Executing script ${wsAdminScript} on ${wsAdminHost}:${wsAdminPort}" />
+
+		<exec executable="sudo" output="${BUILD_LOGS}/${logFileName}" resultproperty="returnCode" failonerror="false">
+			<arg value="${WAS_RUNTIME}/bin/wsadmin.sh" />
+			<arg value="-p" />
+			<arg value="../build-common-linux/props/soap_override.props" />
+			<arg value="-conntype" />
+			<arg value="SOAP" />
+			<arg value="-port" />
+			<arg value="${wsAdminPort}" />
+			<arg value="-host" />
+			<arg value="${wsAdminHost}" />
+			<arg value="-user" />
+			<arg value="${wsAdminUser}" />
+			<arg value="-password" />
+			<arg value="${wsAdminPassword}" />
+			<arg value="-lang" />
+			<arg value="jython" />
+			<arg value="-f" />
+			<arg value="${wsAdminScript}" />
+			<arg value="-tracefile" />
+			<arg value="${BUILD_LOGS}/trace.${logFileName}" />
+		</exec>
+
+		<echo message="wsdmin.sh returnCode = ${returnCode}" />
+
+		<if>
+			<available file="${logFileName}" filepath="${BUILD_LOGS}" />
+			<then>
+
+				<if>
+					<not>
+						<equals arg1="${ignoreErrors}" arg2="true" />
+					</not>
+					<then>
+
+						<antcall target="-checkWsAdminErrors">
+							<param name="fileToCheck" value="${BUILD_LOGS}/${logFileName}" />
+							<param name="fileToCheckLabel" value="${logFileLabel}" />
+						</antcall>
+
+					</then>
+					<else>
+
+						<if>
+							<not>
+								<equals arg1="${returnCode}" arg2="0" />
+							</not>
+							<then>
+
+								<echo message="WARNING: Ignoring failure when executing script ${wsAdminScript} (returnCode=${returnCode}). See ${logFileName} for more details." />
+
+							</then>
+						</if>
+
+					</else>
+				</if>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-checkWsAdminErrors" depends="">
+
+		<!-- Fail if no file exists to check - probably indicates infrastructure error -->
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+				<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+			</then>
+		</if>
+
+		<!-- Check for individual error messages -->
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="WASX....E:" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="SyntaxError:" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="command not found" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<isset property="failResponse" />
+			<then>
+
+				<!-- Fail if error message found -->
+
+				<echo message="Response is not OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" filePath="${fileToCheck}" label="${fileToCheckLabel} (with error description)." />
+
+				<fail message="Error message returned in ${fileToCheck}. Review contents of this file in Logs." />
+
+			</then>
+			<else>
+
+				<!-- Otherwise all OK -->
+
+				<echo message="Response is OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" filePath="${fileToCheck}" label="${fileToCheckLabel}." />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-callUrl">
+
+		<echo message="About to invoke soap service: ${CURL_BIN} --verbose -k ${soapParameters} ${soapUrl}${soapService} -o${responseFile}" />
+
+		<exec executable="${CURL_BIN}" resultproperty="returnCode">
+			<arg line="--verbose -k ${soapParameters} ${soapUrl}${soapService} -o${responseFile}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkCURLErrors">
+			<param name="fileToCheck" value="${responseFile}" />
+			<param name="fileToCheckLabel" value="${responseErrorLabel}" />
+		</antcall>
+
+	</target>
+
+	<target name="-callUrlBasicAuth">
+
+		<echo message="About to invoke soap service: ${CURL_BIN} --verbose -k -u ${soapUserId}:**** ${soapParameters} ${soapUrl}${soapService} -o${responseFile}" />
+
+		<exec executable="${CURL_BIN}" resultproperty="returnCode">
+			<arg line="--verbose -k -u ${soapUserId}:${soapPassword} ${soapParameters} '${soapUrl}${soapService}' -o${responseFile}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<antcall target="-checkCURLErrors">
+			<param name="fileToCheck" value="${responseFile}" />
+			<param name="fileToCheckLabel" value="${responseErrorLabel}" />
+			<param name="ignoreEmptyResponse" value="${ignoreEmptyResponse}" />
+
+		</antcall>
+
+	</target>
+
+	<target name="-checkCURLErrors" depends="">
+
+		<!-- Fail if no file exists to check - probably indicates infrastructure error -->
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+
+				<if>
+					<not>
+						<equals arg1="${ignoreEmptyResponse}" arg2="true" />
+					</not>
+					<then>
+						<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+					</then>
+				</if>
+			</then>
+			<else>
+
+				<!-- Check for individual error messages -->
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="An API change was detected without a corresponding version change while loading a plugin." />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="No component for" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="The specified deployment could not be found:" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="&lt;/error>" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="HTTP Status 401 - Bad credentials" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="dp:result&gt;Authentication failure" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern=":Fault&gt;" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="Empty reply from server" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="couldn't connect to host" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="log-event level=&quot;error&quot;" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="dp:result&gt;ERROR&lt;/dp:result" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="No enum constant" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="An error occurred" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="Error processing command:" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<loadfile property="failResponse" srcfile="${fileToCheck}">
+					<filterchain>
+						<linecontainsregexp>
+							<regexp pattern="No component for" />
+						</linecontainsregexp>
+					</filterchain>
+				</loadfile>
+
+				<if>
+					<isset property="failResponse" />
+					<then>
+
+						<!-- Fail if error message found -->
+
+						<echo message="Response is not OK" />
+
+						<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+
+						<fail message="Error message returned in ${fileToCheck}. Review contents of this file in Logs." />
+
+					</then>
+					<else>
+
+						<!-- Otherwise all OK -->
+
+						<echo message="Response is OK" />
+
+					</else>
+				</if>
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-createAndShareProjectIfNew">
+
+		<if>
+			<available file="${projectToCheck}" type="dir" />
+			<then>
+
+				<echo message="Project ${projectToCheck} already exists." />
+
+			</then>
+			<else>
+
+				<echo message="Project ${projectToCheck} does not exist, so create it and share it." />
+
+				<mkdir dir="${projectToCheck}" />
+
+				<antcall target="-addToShareList">
+					<param name="projectToShare" value="${projectToCheck}" />
+				</antcall>
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-createProjectIfNew">
+
+		<if>
+			<available file="${projectToCheck}" type="dir" />
+			<then>
+
+				<echo message="Project ${projectToCheck} already exists." />
+
+			</then>
+			<else>
+
+				<echo message="Project ${projectToCheck} does not exist, so create it." />
+
+				<mkdir dir="${projectToCheck}" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-checkShareProject">
+
+		<!-- Check to see if project is already shared -->
+		<loadfile property="projectList" srcfile="${TMP_PROJECT_LIST}" />
+		<var name="alreadyShared" unset="true" />
+
+		<for param="projectLine" list="${projectList}" delimiter="${line.separator}">
+			<sequential>
+
+				<if>
+					<equals arg1="@{projectLine}" arg2="${projectToCheck}" />
+
+					<then>
+						<var name="alreadyShared" value="Y" />
+					</then>
+				</if>
+
+			</sequential>
+		</for>
+
+		<!-- Check to see if this project exists in tmp share list -->
+		<loadfile property="shareList" srcfile="${TMP_SHARE_LIST}" />
+		<var name="sharePending" unset="true" />
+
+		<for param="projectLine" list="${shareList}" delimiter="${line.separator}">
+			<sequential>
+
+				<if>
+					<equals arg1="@{projectLine}" arg2="${projectToCheck}" />
+
+					<then>
+						<var name="sharePending" value="Y" />
+					</then>
+				</if>
+
+			</sequential>
+		</for>
+
+		<!-- Add to share list if not already shared and no share pending -->
+		<if>
+			<or>
+				<equals arg1="${alreadyShared}" arg2="Y" />
+				<equals arg1="${sharePending}" arg2="Y" />
+			</or>
+			<then>
+				<echo message="${projectToCheck} either already shared or share pending so no need to add to share list" />
+			</then>
+			<else>
+				<echo message="${projectToCheck} not shared and not pending share so add to share list" />
+
+				<antcall target="-addToShareList">
+					<param name="projectToShare" value="${projectToCheck}" />
+				</antcall>
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-addToShareList">
+
+		<echo file="${TMP_SHARE_LIST}" append="true">${projectToShare}${line.separator}</echo>
+
+	</target>
+
+	<target name="-publishChanges">
+
+		<!-- Publish changes files to downloads -->
+
+		<antcall target="-publishArtifact">
+			<param name="publishFile" value="${BUILD_TMP}/remoteChangeHistory-all.txt" />
+			<param name="publishLabel" value="Full remote commit history." />
+		</antcall>
+
+		<antcall target="-publishArtifact">
+			<param name="publishFile" value="${BUILD_TMP}/remoteChangeHistory-recent.txt" />
+			<param name="publishLabel" value="Recent remote commit history." />
+		</antcall>
+
+		<antcall target="-publishArtifact">
+			<param name="publishFile" value="${BUILD_TMP}/importedChanges-all.txt" />
+			<param name="publishLabel" value="List of file changes in this import." />
+		</antcall>
+
+		<antcall target="-publishArtifact">
+			<param name="publishFile" value="${BUILD_TMP}/importedChangeSets-all.txt" />
+			<param name="publishLabel" value="List of change sets in this import." />
+		</antcall>
+
+	</target>
+
+	<target name="-deliverImportedChangesToComponent" depends="">
+
+		<startBuildActivity label="Delivering imported changes to the ${deliverToComponent} component" activityIdProperty="deliverChanges" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Login to scm -->
+
+		<antcall target="-scmLogin" />
+
+		<!-- Share projects not already shared -->
+
+		<antcall target="-shareProjects">
+			<param name="shareComponent" value="${deliverToComponent}" />
+		</antcall>
+
+		<!-- Deliver changes -->
+
+		<antcall target="-deliverChanges">
+			<param name="deliverToComponent" value="${deliverToComponent}" />
+		</antcall>
+
+	</target>
+
+	<target name="-checkinImportedChanges" depends="">
+
+		<startBuildActivity label="Checkin imported changes" activityIdProperty="deliverChanges" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Login to scm -->
+
+		<antcall target="-scmLogin" />
+
+		<!-- Share projects not already shared -->
+
+		<antcall target="-shareProjects">
+			<param name="shareComponent" value="${defaultComponentForNewProjects}" />
+		</antcall>
+
+		<!-- Just checkin changes -->
+
+		<antcall target="-deliverChanges">
+			<param name="justCheckin" value="true" />
+		</antcall>
+
+	</target>
+
+	<target name="-deliverImportedChanges" depends="">
+
+		<startBuildActivity label="Delivering imported changes" activityIdProperty="deliverChanges" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Login to scm -->
+
+		<antcall target="-scmLogin" />
+
+		<!-- Share projects not already shared -->
+
+		<antcall target="-shareProjects">
+			<param name="shareComponent" value="${defaultComponentForNewProjects}" />
+		</antcall>
+
+		<!-- Deliver changes -->
+
+		<antcall target="-deliverChanges">
+		</antcall>
+
+	</target>
+
+	<target name="-deliverChanges">
+
+		<!-- Are we just doing a checkin? -->
+
+		<if>
+			<equals arg1="${justCheckin}" arg2="true" />
+			<then>
+				<echo message="Note: Only doing a checkin i.e. no deliver." />
+			</then>
+			<else>
+				<echo message="Note: Going to deliver changes." />
+			</else>
+		</if>
+
+		<!-- Determine if delivering a specific component -->
+
+		<var name="deliverScope" unset="true" />
+
+		<if>
+			<isset property="deliverToComponent" />
+			<then>
+				<echo message="Deliver only the ${deliverToComponent} component" />
+				<var name="deliverScope" value="SINGLE" />
+			</then>
+			<else>
+				<echo message="Deliver all components" />
+				<var name="deliverScope" value="ALL" />
+			</else>
+		</if>
+
+		<!-- Determine changes -->
+
+		<antcall target="-scmStatus" />
+
+		<!-- Checkin changes and check whether there were any changes -->
+
+		<var name="checkinLogSize" unset="true" />
+		<antcall target="-scmCheckin" />
+		<if>
+			<available file="scm-checkin.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<length file="${BUILD_LOGS}/scm-checkin.log" property="checkinLogSize" />
+			</then>
+		</if>
+
+		<!-- Get list of projects that were shared -->
+
+		<loadfile property="shareList" srcFile="${TMP_SHARE_LIST}" />
+		<length file="${TMP_SHARE_LIST}" property="shareListSize" />
+
+		<!-- If there were no changes checked in or no projects shared then skip the remaining commands -->
+
+		<if>
+			<or>
+				<not>
+					<equals arg1="${checkinLogSize}" arg2="0" />
+				</not>
+				<not>
+					<equals arg1="${shareListSize}" arg2="0" />
+				</not>
+			</or>
+			<then>
+
+				<!-- Prepare to determine change set id (either for project shared or project checked in) -->
+
+				<touch file="${BUILD_TMP}/importedChanges-all.txt" />
+				<touch file="${BUILD_TMP}/importedChangeSets-all.txt" />
+
+				<!-- First add any shared projects (split by component and check for deliverToComponent) to the imported changes list -->
+
+				<loadfile property="statusFileText" srcFile="${BUILD_LOGS}/scm-status.log" />
+				<propertyregex property="delimitedStatusFileText" override="true" input="${statusFileText}" regexp=" Component: " replace="|" defaultValue="${statusFileText}" />
+
+				<for list="${delimitedStatusFileText}" delimiter="|" param="componentLog">
+
+					<sequential>
+
+						<var name="shareChangeSetId" unset="true" />
+						<var name="shareChangeSetId" value="0" />
+
+						<echo message="componentLog = @{componentLog}" />
+
+						<!-- If the log file contains the component name or delivering all components ... -->
+
+						<if>
+							<or>
+								<equals arg1="${deliverScope}" arg2="ALL" />
+								<contains string="@{componentLog}" substring=") &quot;${deliverToComponent}&quot;" />
+							</or>
+
+							<then>
+
+								<!-- ...check for a change set id -->
+
+								<propertyregex property="shareChangeSetId" override="true" input="@{componentLog}" regexp="Change sets:[^\(]*\(([^)]+)\)" select="\1" />
+
+								<echo message="shareChangeSetId=${shareChangeSetId}" />
+
+								<!-- If there is a share change then add it to the importedChanges-all.txt file -->
+
+								<if>
+									<not>
+										<equals arg1="${shareChangeSetId}" arg2="0" />
+									</not>
+
+									<then>
+										<echo file="${BUILD_TMP}/importedChanges-all.txt" append="true" message="@{componentLog}${line.separator}" />
+										<echo file="${BUILD_TMP}/importedChangeSets-all.txt" append="true" message="${shareChangeSetId}${line.separator}" />
+									</then>
+								</if>
+
+							</then>
+						</if>
+
+					</sequential>
+
+				</for>
+
+				<!-- Next add any checked in projects (split by component and check for deliverToComponent) to the imported changes list -->
+
+				<loadfile property="checkinFileText" srcFile="${BUILD_LOGS}/scm-checkin.log" />
+				<propertyregex property="delimitedCheckinFileText" override="true" input="${checkinFileText}" regexp=" Component: " replace="|" defaultValue="${checkinFileText}" />
+
+				<for list="${delimitedCheckinFileText}" delimiter="|" param="componentLog">
+
+					<sequential>
+
+						<var name="checkinChangeSetId" unset="true" />
+						<var name="checkinChangeSetId" value="0" />
+
+						<echo message="componentLog = @{componentLog}" />
+
+						<!-- If the log file contains the component name or delivering all components ... -->
+
+						<if>
+							<or>
+								<equals arg1="${deliverScope}" arg2="ALL" />
+								<contains string="@{componentLog}" substring=") &quot;${deliverToComponent}&quot;" />
+							</or>
+
+							<then>
+
+								<!-- ... check for a change set id -->
+
+								<propertyregex property="checkinChangeSetId" override="true" input="@{componentLog}" regexp="Change sets:[^\(]*\(([^)]+)\)" select="\1" />
+
+								<echo message="checkinChangeSetId=${checkinChangeSetId}" />
+
+								<!-- If there is a checkin change then add it to the importedChanges-all.txt file -->
+
+								<if>
+									<not>
+										<equals arg1="${checkinChangeSetId}" arg2="0" />
+									</not>
+
+									<then>
+										<echo file="${BUILD_TMP}/importedChanges-all.txt" append="true" message="@{componentLog}${line.separator}" />
+										<echo file="${BUILD_TMP}/importedChangeSets-all.txt" append="true" message="${checkinChangeSetId}${line.separator}" />
+									</then>
+								</if>
+
+							</then>
+						</if>
+
+					</sequential>
+
+				</for>
+
+				<!-- If there were no relevant changes then skip the remaining commands -->
+
+				<length file="${BUILD_TMP}/importedChangeSets-all.txt" property="importedChangeSetsSize" />
+
+				<if>
+					<not>
+						<equals arg1="${importedChangeSetsSize}" arg2="0" />
+					</not>
+
+					<then>
+
+						<var name="changeSetsString" unset="true" />
+						<var name="changeSetsStringAddition" unset="true" />
+
+						<var name="changeSetsString" value="(" />
+
+						<!-- For each change set -->
+
+						<loadfile property="changeSetList" srcFile="${BUILD_TMP}/importedChangeSets-all.txt" />
+
+						<for list="${changeSetList}" delimiter="${line.separator}" param="changeSetId">
+							<sequential>
+
+								<!-- Add a comment to the change set -->
+
+								<antcall target="-scmChangeSetComment">
+									<param name="changeSetId" value="@{changeSetId}" />
+								</antcall>
+
+								<!-- If a work item is supplied then add that to the change set -->
+
+								<if>
+									<isset property="rtc.workItemId" />
+									<then>
+
+										<echo message="Setting work item id ${rtc.workItemId}" />
+
+										<antcall target="-scmChangeSetWorkItem">
+											<param name="changeSetId" value="@{changeSetId}" />
+											<param name="deliverWorkItemId" value="${rtc.workItemId}" />
+										</antcall>
+									</then>
+								</if>
+
+								<!-- Add the change set to the string -->
+
+								<var name="changeSetsStringAddition" value="${changeSetsString} @{changeSetId}" />
+								<var name="changeSetsString" unset="true" />
+								<var name="changeSetsString" value="${changeSetsStringAddition}" />
+								<var name="changeSetsStringAddition" unset="true" />
+
+							</sequential>
+						</for>
+
+						<!-- Finish string -->
+
+						<var name="changeSetsStringAddition" value="${changeSetsString} )" />
+						<var name="changeSetsString" unset="true" />
+						<var name="changeSetsString" value="${changeSetsStringAddition}" />
+						<var name="changeSetsStringAddition" unset="true" />
+
+						<!-- Only deliver if justCheckin not set to true -->
+
+						<if>
+							<not>
+								<equals arg1="${justCheckin}" arg2="true" />
+							</not>
+							<then>
+
+								<!-- Deliver the change set, either for all components, or just the specified component -->
+
+								<if>
+									<equals arg1="${deliverScope}" arg2="ALL" />
+									<then>
+										<antcall target="-scmDeliverAllComponents">
+										</antcall>
+
+										<startBuildActivity label="${changeSetsString} delivered" parentActivityId="${deliverChanges}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+									</then>
+									<else>
+										<antcall target="-scmDeliverComponent">
+											<param name="deliverToComponent" value="${deliverToComponent}" />
+										</antcall>
+
+										<startBuildActivity label="${changeSetsString} delivered to the ${deliverToComponent} component" parentActivityId="${deliverChanges}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+									</else>
+								</if>
+
+							</then>
+						</if>
+
+					</then>
+					<else>
+						<echo message="NOTE: Skip other SCM commands as there was nothing to deliver" />
+
+						<startBuildActivity label="No changes to deliver" parentActivityId="${deliverChanges}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+					</else>
+				</if>
+
+			</then>
+			<else>
+				<echo message="NOTE: Skip other SCM commands as there was nothing to checkin or share" />
+
+				<startBuildActivity label="No changes to checkin or projects to share" parentActivityId="${deliverChanges}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-deliverArtifactsToAssembly" depends="">
+
+		<!-- Store assemblies if ASSEMBLY_COMPONENT is set -->
+
+		<if>
+			<isset property="ASSEMBLY_COMPONENT" />
+			<then>
+
+				<startBuildActivity label="Store assembled artifacts in the ${ASSEMBLY_COMPONENT} component" activityIdProperty="deliverChanges" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<!-- Login to scm -->
+
+				<antcall target="-scmLogin" />
+
+				<!-- Create and share assembly project if it is not already shared -->
+
+				<antcall target="-createAndShareProjectIfNew">
+					<param name="projectToCheck" value="${ASSEMBLY_PATH}" />
+				</antcall>
+
+				<!-- Copy across artifacts (files) to deliver - note the -copyFilesToAssembly target is implemented in the calling build script -->
+
+				<echo message="Copy output files to assembly" />
+				<antcall target="-copyFilesToAssembly" />
+
+				<!-- Share projects not already shared -->
+
+				<antcall target="-shareProjects">
+					<param name="shareComponent" value="${ASSEMBLY_COMPONENT}" />
+				</antcall>
+
+				<!-- Deliver changes -->
+
+				<antcall target="-deliverChanges">
+					<param name="deliverToComponent" value="${ASSEMBLY_COMPONENT}" />
+				</antcall>
+
+			</then>
+			<else>
+				<echo message="NOTE: Not storing the assembly outputs as there is no ASSEMBLY_COMPONENT property specified" />
+
+				<echo message="Copy output files to assembly" />
+				<antcall target="-copyFilesToAssembly" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-deliverClientArtifactsToAssembly" depends="">
+
+		<!-- Store assemblies if CLIENT_ASSEMBLY_COMPONENT is set -->
+
+		<if>
+			<isset property="CLIENT_ASSEMBLY_COMPONENT" />
+			<then>
+
+				<startBuildActivity label="Store assembled client artifacts in the ${CLIENT_ASSEMBLY_COMPONENT} component" activityIdProperty="deliverChanges" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<!-- Login to scm -->
+
+				<antcall target="-scmLogin" />
+
+				<!-- Create and share client assembly project if it is not already shared -->
+
+				<antcall target="-createAndShareProjectIfNew">
+					<param name="projectToCheck" value="${CLIENT_ASSEMBLY_PATH}" />
+				</antcall>
+
+				<!-- Copy across artifacts (files) to deliver - note the -copyFilesToAssembly target is implemented in the calling build script -->
+
+				<echo message="Copy output files to assembly" />
+				<antcall target="-copyClientFilesToAssembly" />
+
+				<!-- Share projects not already shared -->
+
+				<antcall target="-shareProjects">
+					<param name="shareComponent" value="${CLIENT_ASSEMBLY_COMPONENT}" />
+				</antcall>
+
+				<!-- Deliver changes -->
+
+				<antcall target="-deliverChanges">
+					<param name="deliverToComponent" value="${CLIENT_ASSEMBLY_COMPONENT}" />
+				</antcall>
+
+			</then>
+			<else>
+				<echo message="NOTE: Not storing the assembly outputs as there is no CLIENT_ASSEMBLY_COMPONENT property specified" />
+
+				<echo message="Copy client output files to assembly" />
+				<antcall target="-copyClientFilesToAssembly" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-shareProjects" depends="">
+
+		<!-- Get list of projects to share -->
+		<loadfile property="shareList" srcFile="${TMP_SHARE_LIST}" />
+		<length file="${TMP_SHARE_LIST}" property="shareListSize" />
+
+		<!-- Share each of the projects in the share list -->
+		<if>
+			<not>
+				<equals arg1="${shareListSize}" arg2="0" />
+			</not>
+			<then>
+
+				<for list="${shareList}" delimiter="${line.separator}" param="shareListProject">
+					<sequential>
+
+						<!-- Login to scm -->
+						<antcall target="-scmShare">
+							<param name="shareProject" value="@{shareListProject}" />
+							<param name="shareComponent" value="${shareComponent}" />
+						</antcall>
+
+					</sequential>
+				</for>
+
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmLogin">
+
+		<var name="SCM_LOGIN_LOG_FILE" value="${BUILD_LOGS}/scm-login.log" />
+
+		<echo message="About to run the login command" />
+
+		<echo message="Logging output to ${SCM_LOGIN_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_LOGIN_LOG_FILE}" failonerror="false" resultProperty="result.scm-login">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="login" />
+			<arg value="-r" />
+			<arg value="${repositoryAddress}" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+		</exec>
+
+		<if>
+			<available file="scm-login.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_LOGIN_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM login log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmLoad">
+
+		<var name="SCM_LOAD_LOG_FILE" value="${BUILD_LOGS}/scm-load.log" />
+
+		<echo message="About to run the load command" />
+
+		<echo message="Logging output to ${SCM_LOAD_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_LOAD_LOG_FILE}" failonerror="false" resultProperty="result.scm-load">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="load" />
+			<arg value="-r" />
+			<arg value="${remoteRepoAddress}" />
+			<arg value="-u" />
+			<arg value="${remoteUserId}" />
+			<arg value="-P" />
+			<arg value="${remotePassword}" />
+			<arg value="-d" />
+			<arg value="${loadDir}" />
+			<arg value="${remoteWorkspace}" />
+		</exec>
+
+		<if>
+			<available file="scm-load.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_LOAD_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM load log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmListChangeSets">
+
+		<propertyregex property="workspaceNameSafe" override="true" input="${remoteWorkspace}" regexp=" " replace="%20" defaultValue="${remoteWorkspace}" />
+
+		<var name="SCM_LIST_CS_LOG_FILE" value="${BUILD_LOGS}/scm-list-cs.${workspaceNameSafe}.log" />
+
+		<echo message="About to run the list changesets command" />
+
+		<echo message="Logging output to ${SCM_LIST_CS_LOG_FILE}" />
+
+		<if>
+			<isset property="createdAfter" />
+			<then>
+
+				<!-- Return change sets created after date -->
+
+				<echo message="NOTE: Return change sets created after ${createdAfter}." />
+
+				<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_LIST_CS_LOG_FILE}" failonerror="false" resultProperty="result.scm-list-cs">
+					<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+					<arg value="list" />
+					<arg value="changesets" />
+					<arg value="-r" />
+					<arg value="${remoteRepoAddress}" />
+					<arg value="-u" />
+					<arg value="${remoteUserId}" />
+					<arg value="-P" />
+					<arg value="${remotePassword}" />
+					<arg value="-w" />
+					<arg value="${remoteWorkspace}" />
+					<arg value="--maximum" />
+					<arg value="10000" />
+					<arg value="--created-after" />
+					<arg value="${createdAfter}" />
+				</exec>
+
+			</then>
+			<else>
+
+				<!-- Return all change sets (up to 10000) -->
+
+				<echo message="NOTE: Return all change sets." />
+
+				<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_LIST_CS_LOG_FILE}" failonerror="false" resultProperty="result.scm-list-cs">
+					<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+					<arg value="list" />
+					<arg value="changesets" />
+					<arg value="-r" />
+					<arg value="${remoteRepoAddress}" />
+					<arg value="-u" />
+					<arg value="${remoteUserId}" />
+					<arg value="-P" />
+					<arg value="${remotePassword}" />
+					<arg value="-w" />
+					<arg value="${remoteWorkspace}" />
+					<arg value="--maximum" />
+					<arg value="10000" />
+				</exec>
+
+			</else>
+		</if>
+
+		<if>
+			<available file="scm-list-cs.${workspaceNameSafe}.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_LIST_CS_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM list changesets log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmShare">
+
+		<var name="SCM_SHARE_LOG_FILE" value="${BUILD_LOGS}/scm-share.log" />
+
+		<echo message="About to run the share command" />
+
+		<echo message="Logging output to ${SCM_SHARE_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_SHARE_LOG_FILE}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="share" />
+			<arg value="-r" />
+			<arg value="${repositoryAddress}" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="${team.scm.workspaceUUID}@${repositoryAddress}" />
+			<arg value="${shareComponent}" />
+			<arg value="${shareProject}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-share.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_SHARE_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM share log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmStatus">
+
+		<var name="SCM_STATUS_LOG_FILE" value="${BUILD_LOGS}/scm-status.log" />
+
+		<echo message="About to run the status command" />
+
+		<echo message="Logging output to ${SCM_STATUS_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_STATUS_LOG_FILE}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="status" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-status.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_STATUS_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM status log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmListSnapshots">
+
+		<var name="SCM_LIST_SNAPSHOTS_LOG_FILE" value="${BUILD_LOGS}/scm-listSnapshots.log" />
+
+		<echo message="About to run the list snapshots command" />
+
+		<echo message="Logging output to ${SCM_LIST_SNAPSHOTS_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_LIST_SNAPSHOTS_LOG_FILE}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="list" />
+			<arg value="snapshots" />
+			<arg value="-r" />
+			<arg value="${repositoryAddress}" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="${team.scm.workspaceUUID}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-listSnapshots.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_LIST_SNAPSHOTS_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM list snapshots log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmCompareWithSnapshot">
+
+		<var name="SCM_COMPARE_WITH_SNAPSHOT_LOG_FILE" value="${BUILD_LOGS}/scm-compareWithSnapshot.log" />
+
+		<echo message="About to run compare command" />
+
+		<echo message="Logging output to ${SCM_COMPARE_WITH_SNAPSHOT_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_COMPARE_WITH_SNAPSHOT_LOG_FILE}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="compare" />
+			<arg value="-r" />
+			<arg value="${repositoryAddress}" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="snapshot" />
+			<arg value="${snapshotId}" />
+			<arg value="workspace" />
+			<arg value="${team.scm.workspaceUUID}" />
+			<arg value="-f" />
+			<arg value="i" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-compareWithSnapshot.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_COMPARE_WITH_SNAPSHOT_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM compare with snapshot log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmListChanges">
+
+		<var name="SCM_LIST_CHANGES_LOG_FILE" value="${BUILD_LOGS}/scm-listChanges.log" />
+
+		<echo message="About to run the list changes command" />
+
+		<echo message="Logging output to ${SCM_LIST_CHANGES_LOG_FILE}.${changeSetId}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_LIST_CHANGES_LOG_FILE}.${changeSetId}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="list" />
+			<arg value="changes" />
+			<arg value="-r" />
+			<arg value="${repositoryAddress}" />
+			<arg value="${changeSetId}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-listChanges.log.${changeSetId}" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_LIST_CHANGES_LOG_FILE}.${changeSetId}" />
+					<param name="fileToCheckLabel" value="SCM list changes log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmCheckin">
+
+		<var name="SCM_CHECKIN_LOG_FILE" value="${BUILD_LOGS}/scm-checkin.log" />
+
+		<echo message="About to run the checkin command" />
+
+		<echo message="Logging output to ${SCM_CHECKIN_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_CHECKIN_LOG_FILE}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="checkin" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="-v" />
+			<arg value="." />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-checkin.log" filepath="${BUILD_LOGS}" />
+			<then>
+
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_CHECKIN_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM checkin log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmChangeSetComment">
+
+		<var name="SCM_CHANGESETCOMMENT_LOG_FILE" value="${BUILD_LOGS}/scm-changesetcomment.log" />
+
+		<echo message="About to run the changeset comment command" />
+
+		<echo message="Logging output to ${SCM_CHANGESETCOMMENT_LOG_FILE}" />
+
+		<echo message="Change set ID = ${changeSetId}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_CHANGESETCOMMENT_LOG_FILE}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="changeset" />
+			<arg value="comment" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="${changeSetId}" />
+			<arg value="${deliverComment}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-changesetcomment.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_CHANGESETCOMMENT_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM changeset comment log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmChangeSetWorkItem">
+
+		<var name="SCM_CHANGESETWORKITEM_LOG_FILE" value="${BUILD_LOGS}/scm-changesetworkitem.log" />
+
+		<echo message="About to run the changeset work item command" />
+
+		<echo message="Logging output to ${SCM_CHANGESETWORKITEM_LOG_FILE}" />
+
+		<echo message="Change set ID = ${changeSetId}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_CHANGESETWORKITEM_LOG_FILE}" failonerror="false" resultProperty="returnCode">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="changeset" />
+			<arg value="associate" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="${changeSetId}" />
+			<arg value="${deliverWorkItemId}" />
+		</exec>
+
+		<echo message="exec returnCode = ${returnCode}" />
+
+		<if>
+			<available file="scm-changesetworkitem.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_CHANGESETWORKITEM_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM changeset work item log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmDeliverComponent">
+
+		<var name="SCM_DELIVER_LOG_FILE" value="${BUILD_LOGS}/scm-deliver.log" />
+
+		<echo message="About to run the deliver command for component '${deliverToComponent}'" />
+
+		<echo message="Logging output to ${SCM_DELIVER_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_DELIVER_LOG_FILE}" failonerror="false" resultProperty="result.scm-deliver">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="deliver" />
+			<arg value="-r" />
+			<arg value="${repositoryAddress}" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="-C" />
+			<arg value="${deliverToComponent}" />
+			<arg value="-s" />
+			<arg value="${team.scm.workspaceUUID}" />
+		</exec>
+
+		<if>
+			<available file="scm-deliver.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_DELIVER_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM deliver log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-scmDeliverAllComponents">
+
+		<var name="SCM_DELIVER_LOG_FILE" value="${BUILD_LOGS}/scm-deliver.log" />
+
+		<echo message="About to run the deliver command for all components" />
+
+		<echo message="Logging output to ${SCM_DELIVER_LOG_FILE}" />
+
+		<exec dir="${BUILD_SOURCE}" executable="/bin/bash" output="${SCM_DELIVER_LOG_FILE}" failonerror="false" resultProperty="result.scm-deliver">
+			<arg line="${RTC_SCM_TOOLS}/scm.sh" />
+			<arg value="deliver" />
+			<arg value="-r" />
+			<arg value="${repositoryAddress}" />
+			<arg value="-u" />
+			<arg value="${RTC_USER_ID}" />
+			<arg value="-P" />
+			<arg value="${rtcPassword}" />
+			<arg value="-s" />
+			<arg value="${team.scm.workspaceUUID}" />
+		</exec>
+
+		<if>
+			<available file="scm-deliver.log" filepath="${BUILD_LOGS}" />
+			<then>
+				<antcall target="-checkSCMErrors">
+					<param name="fileToCheck" value="${SCM_DELIVER_LOG_FILE}" />
+					<param name="fileToCheckLabel" value="SCM deliver log file" />
+				</antcall>
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-checkSCMErrors" depends="">
+
+		<!-- Fail if no file exists to check - probably indicates infrastructure error -->
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+				<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+			</then>
+		</if>
+
+		<!-- Check for individual error messages -->
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="CRJAZ" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Could not login" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="You don't have permission to perform the following actions:" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Problem running" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Unable to find component" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="No such file or directory" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<isset property="failResponse" />
+			<then>
+
+				<!-- Fail if error message found -->
+
+				<echo message="Response is not OK" />
+
+				<antcall target="-publishLog">
+					<param name="publishFile" value="${fileToCheck}" />
+					<param name="publishLabel" value="${fileToCheckLabel} (with error description)." />
+				</antcall>
+
+				<fail message="Error message returned in ${fileToCheck}. Review contents of this file in Logs." />
+
+			</then>
+			<else>
+
+				<!-- Otherwise all OK -->
+
+				<echo message="Response is OK" />
+
+				<antcall target="-publishLog">
+					<param name="publishFile" value="${fileToCheck}" />
+					<param name="publishLabel" value="${fileToCheckLabel}." />
+				</antcall>
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-checkShellErrors" depends="">
+
+		<!-- Fail if no file exists to check - probably indicates infrastructure error -->
+
+		<if>
+			<not>
+				<available file="${fileToCheck}" />
+			</not>
+			<then>
+				<fail message="No response file ${fileToCheck} - this could indicate an infrastructure error: check earlier in the log for further details." />
+			</then>
+		</if>
+
+		<!-- Check for individual error messages -->
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="No such file or directory" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<isset property="failResponse" />
+			<then>
+
+				<!-- Fail if error message found -->
+
+				<echo message="Processing is not OK" />
+
+				<antcall target="-publishLog">
+					<param name="publishFile" value="${fileToCheck}" />
+					<param name="publishLabel" value="${fileToCheckLabel} (with error description)." />
+				</antcall>
+
+				<fail message="Error message returned in ${fileToCheck}. Review contents of this file in Logs." />
+
+			</then>
+			<else>
+
+				<!-- Otherwise all OK -->
+
+				<echo message="Response is OK" />
+
+				<antcall target="-publishLog">
+					<param name="publishFile" value="${fileToCheck}" />
+					<param name="publishLabel" value="${fileToCheckLabel}." />
+				</antcall>
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-publishLog">
+
+		<var name="publishFileName" unset="true" />
+		<var name="publishFilePath" unset="true" />
+		<basename property="publishFileName" file="${publishFile}" />
+		<dirname property="publishFilePath" file="${publishFile}" />
+
+		<if>
+			<available file="${publishFileName}" filepath="${publishFilePath}" />
+			<then>
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${publishFile}" label="${publishLabel}" />
+			</then>
+			<else>
+				<echo message="WARNING: Could not find log file ${publishFilePath}/${publishFileName} for publishing" />
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-publishArtifact">
+
+		<var name="publishFileName" unset="true" />
+		<var name="publishFilePath" unset="true" />
+		<basename property="publishFileName" file="${publishFile}" />
+		<dirname property="publishFilePath" file="${publishFile}" />
+
+		<if>
+			<available file="${publishFileName}" filepath="${publishFilePath}" />
+			<then>
+				<artifactFilePublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${publishFile}" label="${publishLabel}" />
+			</then>
+			<else>
+				<echo message="WARNING: Could not find artifact ${publishFilePath}/${publishFileName} for publishing" />
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-initCommon" depends="">
+
+		<!-- Log beginning of build -->
+
+		<startBuildActivity label="Initialize build" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Load ant contrib -->
+
+		<echo message="Load ant contrib from ${ANT_CONTRIB}" />
+		<taskdef resource="net/sf/antcontrib/antlib.xml">
+			<classpath>
+				<pathelement location="${ANT_CONTRIB}" />
+			</classpath>
+		</taskdef>
+
+		<!-- Delete and recreate build output directories -->
+
+		<delete dir="${BUILD_LOGS}" failonerror="false" />
+		<delete dir="${BUILD_TMP}" failonerror="false" />
+
+		<mkdir dir="${BUILD_LOGS}" />
+		<mkdir dir="${BUILD_OUTPUT}" />
+		<mkdir dir="${BUILD_TMP}" />
+
+		<!-- Create standard temporary files -->
+
+		<echo message="Create temp files" />
+
+		<touch file="${BUILD_TMP}/share-list.txt" />
+		<touch file="${BUILD_TMP}/project-list.txt" />
+
+		<!-- Load system properties from state store if stateStore.path is set -->
+
+		<if>
+			<isset property="stateStore.path" />
+			<then>
+
+				<echo message="Found a stateStore.path=${stateStore.path} so going to load system properties from state store" />
+
+				<antcall target="-loadProperties" />
+
+			</then>
+		</if>
+
+		<!-- Write out all properties -->
+
+		<echo message="Properties (exluding passwords)..." />
+
+		<echoproperties>
+			<propertyset negate="true">
+				<propertyref regex="assword" />
+				<propertyref regex="ASSWORD" />
+			</propertyset>
+		</echoproperties>
+
+		<echo message="Completed common initialization - now doing any specific steps" />
+
+	</target>
+
+	<target name="-applyPlatformOverridesPre" depends="">
+
+		<if>
+			<equals arg1="${pbc.platform}" arg2="ucd" />
+			<then>
+
+				<echo message="Note: Applying UrbanCode Deploy Edition property values" />
+
+			</then>
+			<elseif>
+				<equals arg1="${pbc.platform}" arg2="jenkins" />
+				<then>
+
+					<echo message="Note: Using Jenkins Edition property values" />
+
+					<!-- Get environment variables (which is where Jenkins puts build number) -->
+
+					<property environment="env" />
+
+					<!-- Set BUILD_HOME to WORKSPACE -->
+
+					<var name="BUILD_HOME" unset="true" />
+					<var name="BUILD_HOME" value="${env.WORKSPACE}" />
+
+				</then>
+
+			</elseif>
+			<else>
+				<echo message="Note: Using default property values" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-applyPlatformOverridesPost" depends="">
+
+		<if>
+			<equals arg1="${pbc.platform}" arg2="ucd" />
+			<then>
+
+				<!-- Set assembly path to same as source path -->
+
+				<var name="ASSEMBLY_PATH" unset="true" />
+				<var name="ASSEMBLY_PATH" value="${BUILD_SOURCE}" />
+
+				<!-- Get step id -->
+
+				<antcallback target="-getStepId" return="stepId" />
+
+				<echo>stepId=${stepId}</echo>
+
+				<!-- Reset standard subdirectories that are transient to be at the step level -->
+
+				<var name="BUILD_LOGS" unset="true" />
+				<var name="BUILD_LOGS" value="${BUILD_HOME}/step${stepId}/logs" />
+
+				<var name="BUILD_OUTPUT" unset="true" />
+				<var name="BUILD_OUTPUT" value="${BUILD_HOME}/step${stepId}/output" />
+
+				<var name="BUILD_TMP" unset="true" />
+				<var name="BUILD_TMP" value="${BUILD_HOME}/step${stepId}/tmp" />
+
+			</then>
+			<elseif>
+				<equals arg1="${pbc.platform}" arg2="jenkins" />
+				<then>
+
+					<!-- Get environment variables (which is where Jenkins puts build number) -->
+
+					<property environment="env" />
+
+					<!-- Set buildLabel to Jenkins build label -->
+
+					<var name="buildLabel" unset="true" />
+					<var name="buildLabel" value="${env.BUILD_NUMBER}" />
+
+					<!-- Set RTC password to NOT_REQUIRED -->
+
+					<var name="RTC_PASSWORD" unset="true" />
+					<var name="RTC_PASSWORD" value="NOT_REQUIRED" />
+
+					<!-- Set buildLink -->
+
+					<var name="buildLink" value="${env.BUILD_URL}" />
+
+				</then>
+
+			</elseif>
+			<else>
+
+				<!-- Set buildLink -->
+
+				<var name="buildLink" value="${repositoryAddress}resource/itemOid/com.ibm.team.build.BuildResult/${buildResultUUID}" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-getStepId" depends="">
+
+		<!-- If step id file exists -->
+
+		<if>
+			<available file="${STEP_ID_FILE}" />
+			<then>
+
+				<!-- Get current step id file -->
+
+				<loadproperties srcFile="${STEP_ID_FILE}" />
+
+				<!-- Increment step id -->
+
+				<math result="stepId" operand1="${stepId}" operation="+" operand2="1" datatype="int" />
+
+			</then>
+			<else>
+
+				<!-- Otherwise set to 1 -->
+
+				<var name="stepId" value="1" />
+
+			</else>
+		</if>
+
+		<!-- Update or create step id file -->
+
+		<echo file="${STEP_ID_FILE}" append="false">stepId=${stepId}</echo>
+
+	</target>
+
+	<target name="userExit1">
+
+		<echo message="\\\ Calling user exit 1 outside of Prolifics Build Conductor" />
+
+		<ant antfile="${USER_EXITS_ANT_FILE}" target="-userExit1" />
+
+		<echo message="/// Returning to Prolifics Build Conductor" />
+
+	</target>
+
+	<target name="userExit2">
+
+		<echo message="\\\ Calling user exit 2 outside of Prolifics Build Conductor" />
+
+		<ant antfile="${USER_EXITS_ANT_FILE}" target="-userExit2" />
+
+		<echo message="/// Returning to Prolifics Build Conductor" />
+
+	</target>
+
+	<target name="userExit3">
+
+		<echo message="\\\ Calling user exit 3 outside of Prolifics Build Conductor" />
+
+		<ant antfile="${USER_EXITS_ANT_FILE}" target="-userExit3" />
+
+		<echo message="/// Returning to Prolifics Build Conductor" />
+
+	</target>
+
+	<target name="userExit4">
+
+		<echo message="\\\ Calling user exit 4 outside of Prolifics Build Conductor" />
+
+		<ant antfile="${USER_EXITS_ANT_FILE}" target="-userExit4" />
+
+		<echo message="/// Returning to Prolifics Build Conductor" />
+
+	</target>
+
+	<target name="userExit5">
+
+		<echo message="\\\ Calling user exit 5 outside of Prolifics Build Conductor" />
+
+		<ant antfile="${USER_EXITS_ANT_FILE}" target="-userExit5" />
+
+		<echo message="/// Returning to Prolifics Build Conductor" />
+
+	</target>
+
+</project>

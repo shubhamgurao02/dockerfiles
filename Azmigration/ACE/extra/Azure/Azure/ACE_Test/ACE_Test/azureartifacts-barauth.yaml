@@ -1,0 +1,10 @@
+--- 
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: azureartifacts-barauth
+  namespace: ace-apac
+spec:
+  data: eyJhdXRoVHlwZSI6IkJBU0lDX0FVVEgiLCJjcmVkZW50aWFscyI6eyJ1c2VybmFtZSI6InMiLCJwYXNzd29yZCI6IjNjeG9sZGc3aHMifX0
+  description: authentication for azure artifacts
+  type: barauth

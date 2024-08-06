@@ -1,0 +1,57 @@
+apiVersion: appconnect.ibm.com/v1beta1
+kind: IntegrationRuntime
+metadata:
+  name: { .Value.isname }
+  namespace: {{ .Values.namespace }} #through cli i/o
+  labels:
+    backup.appconnect.ibm.com/component: integrationruntime
+spec:
+  adminServerSecure: false
+  annotations:
+    productName: {{ .Values.productName }}
+    productID: {{ .Values.productID }}
+    productChargedContainers: {{ .Values.productChargedContainers }}
+    productMetric: {{ .Values.productMetric }}
+    productCloudpakRatio: {{ .Values.productCloudpakRatio }}
+    cloudpakName: {{ .Values.cloudpakName }}
+    cloudpakId: {{ .Values.cloudpakId }}
+  barURL:
+    {{- range .Values.barURL }}
+    - {{ . }}
+    {{- end }}
+  dashboardUsers:
+    bypassGenerate: false 
+  designerFlowsOperationMode: disabled
+  enableMetrics: false
+  {{- $separator := ", " -}}
+  {{- $quotedItems := slice -}}
+  {{- range $item := .Values.myList -}}
+  {{- $quotedItems = $quotedItems | append (printf "'%s'" $item) -}}
+  {{- end -}}
+  {{- $joinedList := join $separator $quotedItems -}}
+
+  configurations: [ {{ $joinedList }} ]
+  labels:
+    version: v1
+  license:
+    accept: true
+    license: {{ .Values.license }}  
+    use: {{ .Values.use }}
+  pod:
+    containers:
+      runtime:
+        resources:
+          limits:
+            cpu: {{ .Values.limits.cpu }}
+            memory: {{ .Values.limits.memmory }}
+          requests:
+            cpu: {{ .Values.requests.cpu }}
+            memory: {{ .Values.requests.cpu }}
+
+  replicas: {{ .Values.replicas }}
+  router:
+    timeout: 120ms  #
+  service:
+    endpointType: http
+    type: ClusterIP   
+  version: '{{ .Values.version }}'

@@ -1,0 +1,69 @@
+==== Step#1  Take the back up of the below files
+qm.ini file
+Queue manager data path
+Queue manager log path
+
+cp /var/mqm/qmgrs/SMYMFTQM01/qm.ini qm.ini_BKP
+cp /var/mqm/qmgrs/SMYMFTQM01 SMYMFTQM01_Data_BKP
+cp /var/mqm/log/SMYMFTQM01 SMYMFTQM01_log_BKP
+
+==== Step#2 Take the backup of the QMGR and authentication 
+
+mkdir SMYMFTQM01_BKP
+dmpmqcfg -m SMYMFTQM01 -t all -x all -o mqsc -a > /tmp/SMYMFTQM01_BKP/SMYMFTQM01.mqsc
+dmpmqcfg -m SMYMFTQM01 -x authrec -o setmqaut > /tmp/SMYMFTQM01_BKP/SMYMFTQM01.authrec
+
+================================ MFT =======================================
+take the backup of agents
+cd /var/mqm/mqft/config/SMYMFTQM01/agents/
+
+
+====== Monitors Backup ========================
+
+cd /tmp
+mkdir SMYMFTQM01
+Create below backup directories  under SMYMFTQM01 directorie
+== Creating backup directories with Agents name_BKP
+
+PSFT.P01.MFT01_BKP
+PSFT.P03.MFT01_BKP
+PSFT.BRP01.MFT01_BKP
+PSFT.GRPP01.MFT0_BKP
+PSFT.P02.MFT01_BKP
+
+PODS_TO_ESB_OB_BKP
+ESB_TO_PROVIDERS_OB_BKP
+TO_BRDG_MEDOV_OB_BKP
+TO_BRDG_PRIANO_OB_BKP
+MEDOV_TO_PODS_IB_BKP
+PRIANO_TO_PODS_IB_BKP
+PODS_WMS_TO_ESB_OB_BKP
+
+PSOFT_BRIDGE_AGT_BKP
+PSOFT_LOCAL_AGT_BKP
+
+===================================
+fteListMonitors -ma PSFT.P01.MFT01 -od /tmp/SMYMFTQM01/PSFT.P01.MFT01_BKP
+fteListMonitors -ma PSFT.P03.MFT01 -od /tmp/SMYMFTQM01/PSFT.P03.MFT01_BKP
+fteListMonitors -ma PSFT.BRP01.MFT01 -od /tmp/SMYMFTQM01/PSFT.BRP01.MFT01_BKP
+fteListMonitors -ma PSFT.GRPP01.MFT0 -od /tmp/SMYMFTQM01/PSFT.GRPP01.MFT0_BKP
+fteListMonitors -ma PSFT.P02.MFT01 -od /tmp/SMYMFTQM01/PSFT.P02.MFT01_BKP
+
+fteListMonitors -ma PODS_TO_ESB_OB_BKP -od /tmp/SMYMFTQM01/PODS_TO_ESB_OB_BKP
+fteListMonitors -ma ESB_TO_PROVIDERS_OB -od /tmp/SMYMFTQM01/ESB_TO_PROVIDERS_OB_BKP
+fteListMonitors -ma TO_BRDG_MEDOV_OB -od /tmp/SMYMFTQM01/TO_BRDG_MEDOV_OB_BKP
+fteListMonitors -ma TO_BRDG_PRIANO_OB -od /tmp/SMYMFTQM01/TO_BRDG_PRIANO_OB_BKP
+fteListMonitors -ma MEDOV_TO_PODS_IB -od /tmp/SMYMFTQM01/MEDOV_TO_PODS_IB_BKP
+fteListMonitors -ma PRIANO_TO_PODS_IB -od /tmp/SMYMFTQM01/PRIANO_TO_PODS_IB_BKP
+fteListMonitors -ma PODS_WMS_TO_ESB_OB -od /tmp/SMYMFTQM01/PODS_WMS_TO_ESB_OB_BKP
+
+fteListMonitors -ma PSOFT_BRIDGE_AGT -od /tmp/SMYMFTQM01/PSOFT_BRIDGE_AGT_BKP
+fteListMonitors -ma PSOFT_LOCAL_AGT -od /tmp/SMYMFTQM01/PSOFT_LOCAL_AGT_BKP
+
+
+
+====== Templates Backup====
+
+mkdir SMYMFTQM01
+mkdir Templates
+fteListTemplates -x -o /tmp/SMYMFTQM01/Templates

@@ -1,0 +1,134 @@
+openjdk -11 url:
+https://download.java.net/openjdk/jdk11.0.0.1/ri/openjdk-11.0.0.1_linux-x64_bin.tar.gz
+
+tar -xvf openjdk-11.0.0.1_linux-x64_bin.tar.gz
+
+https://github.com/nodesource/distributions
+
+
+# Use an official Ubuntu-based image as a parent image
+FROM ubuntu:latest
+
+# Set environment variables for Tomcat version and installation path
+ENV TOMCAT_MAJOR 9
+ENV TOMCAT_VERSION 9.0.80
+ENV CATALINA_HOME /opt/tomcat
+ENV PATH $CATALINA_HOME/bin:$PATH
+
+# Install OpenJDK 11, Maven, and other necessary packages
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jre maven curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download and install Apache Tomcat
+RUN curl -O https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.80/bin/apache-tomcat-9.0.80.tar.gz && \
+    tar -xvf apache-tomcat-9.0.80.tar.gz -C /opt && \
+    ln -s /opt/apache-tomcat-9.0.80 ${CATALINA_HOME} && \
+    rm apache-tomcat-9.0.80.tar.gz
+
+
+
+###############################################build##########################
+docker run -v C:\RL\RLreplace\PPM\CostMS:/extra 7b8108a695dd build CostMS
+##########################################cmd for deplyment container ##########################
+docker build -t commonms --build-arg WAR_FILE=CommonMS.war --build-arg TOMCAT_PORT=8080 .
+########################################################deployment###############################
+# Use the official Tomcat image as a parent image
+FROM tomcat:9-jre11-slim
+
+# Remove the default ROOT application
+RUN rm -rf /usr/local/tomcat/webapps/ROOT
+
+# Copy your WAR file into the webapps directory
+ARG WAR_FILE
+COPY $WAR_FILE /usr/local/tomcat/webapps/ROOT.war
+
+# Expose the Tomcat port as a build argument with a default value of 8080
+ARG TOMCAT_PORT=8080
+EXPOSE $TOMCAT_PORT
+
+# Start Tomcat when the container starts
+CMD ["catalina.sh", "run"]
+############################################################################################
+
+
+########################################push container to dockerhub#########################
+docker tag my-app-image myusername/my-repo:latest
+docker push myusername/my-repo:latest
+###########################################deploy jar file #################################
+
+FROM ubuntu:latest
+
+# Update package list and install essential tools
+RUN apt-get update && apt-get install -y software-properties-common
+
+# Add the OpenJDK PPA repository for Java 8
+RUN add-apt-repository ppa:openjdk-r/ppa && apt-get update
+
+# Install OpenJDK 8
+RUN apt-get install -y openjdk-8-jdk
+
+# Set Java environment variables
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+ENV PATH $JAVA_HOME/bin:$PATH
+
+# Install Tomcat
+RUN apt-get install -y tomcat8
+
+WORKDIR /app
+
+# Arguments for the JAR file name and port number
+ARG JAR_FILE
+ARG PORT
+
+COPY ${JAR_FILE} /var/lib/tomcat8/webapps/
+
+EXPOSE ${PORT}
+
+CMD ["catalina.sh", "run"]
+
+#############################################################################
+
+docker build -t apigateway --build-arg JAR_FILE=your-app.jar --build-arg PORT=9191 -f java8file .
+
+docker run -p 8080:8080 ubuntu-java-tomcat
+
+##############################################################################
+CostMS 8090
+apigateway 9191
+
+
+***************************
+# Use an Ubuntu image as the base
+FROM ubuntu:latest
+
+# Update package list and install essential tools
+RUN apt-get update && apt-get install -y software-properties-common
+
+# Add the OpenJDK PPA repository for Java 8
+RUN add-apt-repository ppa:openjdk-r/ppa && apt-get update
+
+# Install OpenJDK 8
+RUN apt-get install -y openjdk-8-jdk
+
+# Download and install Tomcat 8
+RUN apt-get install -y curl && \
+    curl -O https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.75/bin/apache-tomcat-8.5.75.tar.gz && \
+    tar -xvf apache-tomcat-8.5.75.tar.gz -C /opt && \
+    mv /opt/apache-tomcat-8.5.75 /opt/tomcat
+
+# Set environment variables
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+ENV CATALINA_HOME /opt/tomcat
+ENV PATH $CATALINA_HOME/bin:$PATH
+
+# Expose the default Tomcat port
+EXPOSE 8080
+
+# Start Tomcat when the container starts
+CMD ["catalina.sh", "run"]
+
+
+
+*******************************************************
+docker run -d --network ppm_network --name apigateway -p 9191:9191 4912a1c97970

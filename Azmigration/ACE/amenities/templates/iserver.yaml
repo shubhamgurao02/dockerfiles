@@ -1,0 +1,49 @@
+apiVersion: appconnect.ibm.com/v1beta1
+kind: IntegrationServer
+metadata:
+  name: {{ include "amenities.fullname" . }}
+  labels:
+  {{- include "amenities.labels" . | nindent 4 }}
+spec:
+  adminServerSecure: {{ .Values.adminServerSecure }}
+  annotations:
+    cloudpakId: '{{ .Values.cloudpakId }}'
+    cloudpakName: '{{ .Values.cloudpakName }}'
+    productChargedContainers: {{ .Values.productChargedContainers }}
+    productCloudpakRatio: "{{ .Values.productCloudpakRatio }}"
+    productID: '{{ .Values.productID }}'
+    productMetric: '{{ .Values.productMetric }}'
+    productName: '{{ .Values.productName }}'
+  barURL: {{ .Values.barList }}
+  createDashboardUsers: {{ .Values.createDashboardUsers }}
+  designerFlowsOperationMode: '{{ .Values.designerFlowsOperationMode }}'
+  enableMetrics: {{ .Values.enableMetrics }}
+  configurations: [ {{ include "amenities.cnfg.gen" . }}-generic-config-files , {{ include "amenities.cnfg.barauth" . }}-nexus-barauth , {{ include "amenities.cnfg.ts" . }}-truststore.jks , {{ include "amenities.cnfg.dbparm" . }}-odbc-credentials , {{ include "amenities.cnfg.servercon" . }}-server-conf , {{ include "amenities.cnfg.policyprj" . }}-project-policy , {{ include "amenities.cnfg.odbcini" . }}-odbc , {{ .Values.switchServerName }} ]
+  labels:
+    version: v1
+  license:
+    accept: {{ .Values.licenseAccept }}
+    license: {{ .Values.license }}
+    use: {{ .Values.licenseUse }}
+  logFormat: '{{ .Values.logFormat }}'
+  pod:
+    containers:
+      runtime:
+        resources:
+          limits:
+            cpu: '{{ .Values.cpuLimit }}'
+            memory: '{{ .Values.memoryLimit }}'
+          requests:
+            cpu: '{{ .Values.cpuRequest }}'
+            memory: '{{ .Values.memoryRequest }}'
+    hostAliases:
+    - hostnames:
+      - '{{ .Values.hostAliasesHostnames }}'
+      ip: '{{ .Values.hostAliasesIP }}'
+  replicas: {{ .Values.replicas }}
+  router:
+    timeout: '{{ .Values.routerTimeout }}'
+  service:
+    endpointType: '{{ .Values.serviceEndpointType }}'
+    type: '{{ .Values.serviceType }}'
+  version: '{{ .Values.version }}'

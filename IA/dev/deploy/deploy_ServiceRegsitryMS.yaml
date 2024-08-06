@@ -1,0 +1,19 @@
+ deploy_ServiceRegsitryMS:
+   stage: deploy
+   tags:
+    - ppmrunner
+   dependencies:
+    - build_ServiceRegsitryMS
+   script:
+    - ls -ltr
+    - podman rmi -f ServiceRegsitryMS
+    - podman rm -f ServiceRegsitryMS
+    - podman build -t ServiceRegsitryMS --build-arg WAR_FILE=ServiceRegsitryMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+    - podman run -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e     DB_PORT=$DB_PORT -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -d --network ppm_network --name ServiceRegsitryMS --p 9207:8080 ServiceRegsitryMS
+   rules:
+    - if: $CI_COMMIT_BRANCH == "ppm-dev"
+      changes: 
+       - ServiceRegsitryMS/**/*
+   needs:
+     - job: build_ServiceRegsitryMS
+   

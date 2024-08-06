@@ -1,0 +1,20 @@
+ deploy_qa_apigatewayms:
+   stage: deploy
+   tags:
+     - ppm-qa
+   dependencies:
+     - build_apigatewayms_qa 
+   script:
+     - ls -ltr
+     - podman rmi --force apigatewayms 
+     - podman rm -f apigatewayms 
+     - podman build -t apigatewayms --build-arg WAR_FILE=ApiGatewayMS.jar --build-arg TOMCAT_PORT=8080 -f java8file .
+     - podman run -d --network ppm_network --name apigatewayms -p 9191:8080 apigatewayms 
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa"
+       changes:
+         - ApiGatewayMS/**/*
+   needs:
+     - job: build_apigatewayms_qa
+

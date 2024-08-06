@@ -1,0 +1,12 @@
+# Use an official Ubuntu-based image as a parent image
+FROM ubuntu:latest
+
+
+# Install OpenJDK 11, Maven, and other necessary packages
+RUN apt-get update && \
+    apt-get install -y openjdk-8-jre maven  && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY build.sh /buildconductor/build.sh
+
+ENTRYPOINT ["/bin/bash", "/buildconductor/build.sh"]

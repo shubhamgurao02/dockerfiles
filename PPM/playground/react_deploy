@@ -1,0 +1,21 @@
+FROM docker.io/nginx:latest
+
+COPY build /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/nginx.conf
+
+RUN mkdir /etc/nginx/sites-enabled && \
+    mkdir /etc/nginx/sites-available && \
+    mkdir /etc/nginx/ssl  
+
+COPY sites-enabled/ /etc/nginx/sites-enabled 
+COPY sites-available/ /etc/nginx/sites-available 
+COPY *.pem  /etc/nginx/ssl 
+COPY *.crt /etc/nginx/ssl
+
+#RUN service nginx restart
+
+EXPOSE 80
+
+# Start Nginx when the container starts
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,19 @@
+ deploy_qa_administrationms:
+   stage: deploy
+   tags:
+     - ppm-qa 
+   dependencies:
+     - build_administrationms_qa 
+   script:
+     - ls -ltr
+     - podman rmi --force administrationms 
+     - podman rm -f administrationms 
+     - podman build -t administrationms --build-arg WAR_FILE=administrationms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -e DB_USER=$DB_USER  -e DB_PASSWORD=$DB_PASSWORD -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -d --network ppm_network --name administrationms -p 8108:8080 administrationms 
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+       changes:
+         - administrationms/**/*
+   needs:
+     - job: build_administrationms_qa

@@ -1,0 +1,143 @@
+{
+    "_links": {
+      "self": {
+        "href": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_apis/build/Builds/7339"
+      },
+      "web": {
+        "href": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_build/results?buildId=7339"
+      },
+      "sourceVersionDisplayUri": {
+        "href": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_apis/build/builds/7339/sources"
+      },
+      "timeline": {
+        "href": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_apis/build/builds/7339/Timeline"
+      },
+      "badge": {
+        "href": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_apis/build/status/878"
+      }
+    },
+    "properties": {},
+    "tags": [],
+    "validationResults": [],
+    "plans": [
+      {
+        "planId": "ab2ca315-0388-4ea5-920b-fd18e7de4bb6"
+      }
+    ],
+    "triggerInfo": {
+      "ci.sourceBranch": "refs/heads/release",
+      "ci.sourceSha": "cbd87ca087c93fedd42e6f8f35d9586b12d950fc",
+      "ci.message": "Merged PR 1564: changes done according to mentioned ESB-1902 decimal to integer",
+      "ci.triggerRepository": "2196c52f-a53b-4464-bc14-396b0293feca"
+    },
+    "id": 7339,
+    "buildNumber": "20240105.1",
+    "status": "inProgress",
+    "queueTime": "2024-01-05T16:19:21.7164677Z",
+    "startTime": "2024-01-05T16:19:24.8102298Z",
+    "url": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_apis/build/Builds/7339",
+    "definition": {
+      "drafts": [],
+      "id": 878,
+      "name": "PRDO-OMSRLAP_OMS2BAOZUN_ShipUpdate_App",
+      "url": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_apis/build/Definitions/878?revision=2",
+      "uri": "vstfs:///Build/Definition/878",
+      "path": "\\PROD\\OMSRLAP",
+      "type": "build",
+      "queueStatus": "enabled",
+      "revision": 2,
+      "project": {
+        "id": "4bf13282-668f-4c30-a98a-c0ae679d5332",
+        "name": "ACE",
+        "url": "https://dev.azure.com/RL-Integration/_apis/projects/4bf13282-668f-4c30-a98a-c0ae679d5332",
+        "state": "wellFormed",
+        "revision": 65,
+        "visibility": "private",
+        "lastUpdateTime": "2022-11-01T13:57:11.733Z"
+      }
+    },
+    "buildNumberRevision": 1,
+    "project": {
+      "id": "4bf13282-668f-4c30-a98a-c0ae679d5332",
+      "name": "ACE",
+      "url": "https://dev.azure.com/RL-Integration/_apis/projects/4bf13282-668f-4c30-a98a-c0ae679d5332",
+      "state": "wellFormed",
+      "revision": 65,
+      "visibility": "private",
+      "lastUpdateTime": "2022-11-01T13:57:11.733Z"
+    },
+    "uri": "vstfs:///Build/Build/7339",
+    "sourceBranch": "refs/heads/release",
+    "sourceVersion": "cbd87ca087c93fedd42e6f8f35d9586b12d950fc",
+    "queue": {
+      "id": 9,
+      "name": "Azure Pipelines",
+      "pool": {
+        "id": 9,
+        "name": "Azure Pipelines",
+        "isHosted": true
+      }
+    },
+    "priority": "normal",
+    "reason": "individualCI",
+    "requestedFor": {
+      "displayName": "Pradeep Battula",
+      "url": "https://spsprodcus5.vssps.visualstudio.com/A2e3f0a3a-9c03-4df9-af50-70a16002ef94/_apis/Identities/2986b70a-0a83-6998-8e67-79b812275349",
+      "_links": {
+        "avatar": {
+          "href": "https://dev.azure.com/RL-Integration/_apis/GraphProfile/MemberAvatars/aad.Mjk4NmI3MGEtMGE4My03OTk4LThlNjctNzliODEyMjc1MzQ5"
+        }
+      },
+      "id": "2986b70a-0a83-6998-8e67-79b812275349",
+      "uniqueName": "Pradeep.Battula@RalphLauren.com",
+      "imageUrl": "https://dev.azure.com/RL-Integration/_apis/GraphProfile/MemberAvatars/aad.Mjk4NmI3MGEtMGE4My03OTk4LThlNjctNzliODEyMjc1MzQ5",
+      "descriptor": "aad.Mjk4NmI3MGEtMGE4My03OTk4LThlNjctNzliODEyMjc1MzQ5"
+    },
+    "requestedBy": {
+      "displayName": "Microsoft.VisualStudio.Services.TFS",
+      "url": "https://spsprodcus5.vssps.visualstudio.com/A2e3f0a3a-9c03-4df9-af50-70a16002ef94/_apis/Identities/00000002-0000-8888-8000-000000000000",
+      "_links": {
+        "avatar": {
+          "href": "https://dev.azure.com/RL-Integration/_apis/GraphProfile/MemberAvatars/s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA"
+        }
+      },
+      "id": "00000002-0000-8888-8000-000000000000",
+      "uniqueName": "00000002-0000-8888-8000-000000000000@2c895908-04e0-4952-89fd-54b0046d6288",
+      "imageUrl": "https://dev.azure.com/RL-Integration/_apis/GraphProfile/MemberAvatars/s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA",
+      "descriptor": "s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA"
+    },
+    "lastChangedDate": "2024-01-08T05:43:24.643Z",
+    "lastChangedBy": {
+      "displayName": "Microsoft.VisualStudio.Services.TFS",
+      "url": "https://spsprodcus5.vssps.visualstudio.com/A2e3f0a3a-9c03-4df9-af50-70a16002ef94/_apis/Identities/00000002-0000-8888-8000-000000000000",
+      "_links": {
+        "avatar": {
+          "href": "https://dev.azure.com/RL-Integration/_apis/GraphProfile/MemberAvatars/s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA"
+        }
+      },
+      "id": "00000002-0000-8888-8000-000000000000",
+      "uniqueName": "00000002-0000-8888-8000-000000000000@2c895908-04e0-4952-89fd-54b0046d6288",
+      "imageUrl": "https://dev.azure.com/RL-Integration/_apis/GraphProfile/MemberAvatars/s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA",
+      "descriptor": "s2s.MDAwMDAwMDItMDAwMC04ODg4LTgwMDAtMDAwMDAwMDAwMDAwQDJjODk1OTA4LTA0ZTAtNDk1Mi04OWZkLTU0YjAwNDZkNjI4OA"
+    },
+    "orchestrationPlan": {
+      "planId": "ab2ca315-0388-4ea5-920b-fd18e7de4bb6"
+    },
+    "logs": {
+      "id": 0,
+      "type": "Container",
+      "url": "https://dev.azure.com/RL-Integration/4bf13282-668f-4c30-a98a-c0ae679d5332/_apis/build/builds/7339/logs"
+    },
+    "repository": {
+      "id": "2196c52f-a53b-4464-bc14-396b0293feca",
+      "type": "TfsGit",
+      "name": "OMSRLAP_OMS2BAOZUN_ShipUpdate_App",
+      "url": "https://dev.azure.com/RL-Integration/ACE/_git/OMSRLAP_OMS2BAOZUN_ShipUpdate_App",
+      "clean": null,
+      "checkoutSubmodules": false
+    },
+    "retainedByRelease": false,
+    "triggeredByBuild": null,
+    "appendCommitMessageToRunName": true
+  }
+  

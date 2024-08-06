@@ -1,0 +1,19 @@
+ deploy_qa_accountingms:
+   stage: deploy
+   tags:
+     - ppm-qa
+   dependencies:
+     - build_accountingms_qa 
+   script:
+     - ls -ltr
+     - podman rmi --force accountingms 
+     - podman rm -f accountingms 
+     - podman build -t accountingms --build-arg WAR_FILE=accountingms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -e DB_USER=$DB_USER  -e DB_PASSWORD=$DB_PASSWORD -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -d --network ppm_network --name accountingms -p 8107:8080 accountingms   
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa" 
+       changes:
+         - accountingms/**/*
+   needs:
+     - job: build_accountingms_qa
+  

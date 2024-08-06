@@ -1,0 +1,18 @@
+ build_utilityms_qa:
+   stage: build
+   tags:
+     - ppm-qa
+   script: 
+     - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+     - ls -ltr
+     - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build UtilityMS
+     - ls -ltr UtilityMS
+     - cp UtilityMS/target/*war .
+   artifacts:
+     paths:
+       - '*.war'
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa"
+       changes:
+         - UtilityMS/**/*
+

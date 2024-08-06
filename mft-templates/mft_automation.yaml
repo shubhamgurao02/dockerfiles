@@ -1,0 +1,48 @@
+---
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Create a directory for backup
+      file:
+        path: /tmp/mft_backup
+        state: absent
+    - name: Create a directory for backup
+      file:
+        path: /tmp/mft_backup
+        state: directory
+        mode: '0777'
+    - name: create backup
+      shell: |
+        cd /opt/mqm/bin
+        ./fteListMonitors -ma {{qm}} -od /tmp/mft_backup
+      register: backup_state
+      become: yes
+      become_user: mqm
+
+    - debug:
+        msg: "{{backup_state.stdout_lines}}"
+    - name: output
+      shell: |
+        cd /tmp/mft_backup/
+        ls -lrt | tail -n +2|awk '{print $NF}'
+      register: out
+    - debug:
+        msg: "{{out.stdout_lines}}"
+    - local_action: copy content={{out.stdout_lines}} dest=monitor_details.txt
+    - name: run comparision tool
+      shell: |
+         python3 filecomparisiontool.py qmdetails.xlsx monitor_details.txt MFTTEST AGNT.MFT.Q01.MFT01 new
+
+      register: new_monitors
+    - debug:
+        msg: "{{new_monitors}}"
+    - name: create new monitors
+      shell: |
+        ls -ltr
+        # cd /home/mqm/
+      register: newmon_state
+      become: yes
+      become_user: mqm
+      # with_items:
+      #   - "{{new_monitors.stdout_lines}}"
+

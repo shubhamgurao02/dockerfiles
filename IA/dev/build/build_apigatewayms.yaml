@@ -1,0 +1,21 @@
+ build_apigatewayms:
+   stage: build
+   tags:
+     - ppmrunner
+   script:
+     - echo $CI_COMMIT_BRANCH
+     - podman pull docker.io/shubhgdocker/pbc-java-jdk-8-build:latest
+     - ls -ltr
+     - podman run -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-8-build:latest build ApiGatewayMS
+     #- podman exec -it -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-8-build:latest sh -c cd ApiGatewayMS && mvn sonar:sonar -Dsonar.host.url=http://10.11.12.149:9000/projects -Dsonar.login=admin -Dsonar.password=admin123
+     - ls -ltr ApiGatewayMS
+     - cp ApiGatewayMS/target/*jar .
+    
+   artifacts:
+     paths:
+       - '*.jar'
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-dev"
+       changes:
+         - ApiGatewayMS/**/*
+

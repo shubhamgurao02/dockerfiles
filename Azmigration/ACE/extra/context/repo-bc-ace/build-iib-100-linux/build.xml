@@ -1,0 +1,1719 @@
+<project name="build" default="assembleApp">
+
+	<!-- Import common -->
+
+	<import file="${BUILD_TOOLS}/build-common-linux/build-common.xml" />
+
+	<!-- Import toolkit -->
+
+	<import file="${BUILD_TOOLS}/build-common-linux/platform/${pbc.platform}/BuildToolkitTaskDefs.xml" />
+
+	<target name="assembleApp" depends="-init">
+
+		<startBuildActivity label="Assemble the bars" activityIdProperty="creatingBars" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- For each bar that needs to be assembled... -->
+
+		<for list="${bars.list}" param="barName" delimiter=";">
+
+			<sequential>
+
+				<trycatch property="exceptionMessage" reference="exceptionObject">
+
+					<try>
+
+						<!-- Default to OK -->
+
+						<var name="stepResult" value="OK" />
+						<var name="stepResultMessage" value="" />
+
+						<!-- Get start time -->
+
+						<var name="startTime" unset="true" />
+						<tstamp>
+							<format property="startTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+						</tstamp>
+
+						<!-- Call target to do the work -->
+
+						<antcall target="-assembleApp">
+							<param name="bar.name" value="@{barName}" />
+							<param name="bar.applicationsList" value="${bar.@{barName}.applications.list}" />
+							<param name="bar.projectsList" value="${bar.@{barName}.projects.list}" />
+							<param name="bar.deployAsSource" value="${bar.@{barName}.deployAsSource}" />
+							<param name="bar.deployableFiles" value="${bar.@{barName}.deployableFiles}" />
+						</antcall>
+
+					</try>
+
+					<catch>
+
+						<!-- Set result to failed -->
+
+						<var name="stepResult" unset="true" />
+						<var name="stepResultMessage" unset="true" />
+						<var name="stepResult" value="FAIL" />
+						<var name="stepResultMessage" value="[${exceptionMessage}]" />
+
+						<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="&quot;" replace="" global="true" defaultValue="${stepResultMessage}" />
+						<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="${line.separator}" replace=" " global="true" defaultValue="${stepResultMessage}" />
+
+						<if>
+							<not>
+								<isset property="exceptionObject" />
+							</not>
+							<then>
+								<var name="exceptionObject" value="None" />
+							</then>
+						</if>
+
+						<fail message="Exception encountered. Message = [${exceptionMessage}]; Object = [${exceptionObject}]." />
+
+					</catch>
+
+					<finally>
+
+						<!-- Write out a DevOps pipeline event if a URL is provided for the database - this allows monitoring of DevOps activity -->
+
+						<if>
+							<and>
+								<isset property="pipelineEvents.url" />
+								<not>
+									<or>
+										<equals arg1="${pipelineEvents.url}" arg2="" />
+										<equals arg1="${pipelineEvents.url}" arg2=" " />
+									</or>
+								</not>
+							</and>
+							<then>
+
+								<!-- Get end time -->
+
+								<var name="endTime" unset="true" />
+								<tstamp>
+									<format property="endTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+								</tstamp>
+
+								<!-- Post pipeline event -->
+
+								<antcall target="-postPipelineEvent">
+									<param name="pipelineEvents.url" value="${pipelineEvents.url}" />
+									<param name="pipeline.phase" value="Build" />
+									<param name="pipeline.id" value="${buildLabel}" />
+									<param name="pipeline.user" value="${userId}" />
+									<param name="pipeline.application" value="${pipelineEvents.application}" />
+									<param name="pipeline.component" value="@{barName}" />
+									<param name="pipeline.runtimePlatform" value="IBM Integration Bus" />
+									<param name="pipeline.location" value="${engineId}" />
+									<param name="pipeline.locationType" value="${pbc.platform}" />
+									<param name="pipeline.input" value="" />
+									<param name="pipeline.inputType" value="" />
+									<param name="pipeline.output" value="[@{barName}]" />
+									<param name="pipeline.outputType" value="[Broker Archive]" />
+									<param name="pipeline.startTime" value="${startTime}" />
+									<param name="pipeline.endTime" value="${endTime}" />
+									<param name="pipeline.result" value="${stepResult}" />
+									<param name="pipeline.resultMessage" value="${stepResultMessage}" />
+
+								</antcall>
+							</then>
+						</if>
+					</finally>
+
+				</trycatch>
+
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="overrideApp" depends="-init, -initAppDeploy">
+
+		<antcall target="-overrideAppNoInit" />
+
+	</target>
+
+	<target name="deployApp" depends="-init, -initAppDeploy">
+
+		<antcall target="-deployAppNoInit" />
+
+	</target>
+
+	<target name="-overrideAppNoInit">
+
+		<startBuildActivity label="Override the bars' properties" activityIdProperty="overrideBars" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- For each bar file... -->
+
+		<for list="${bars.list}" param="barName" delimiter=";">
+
+			<sequential>
+
+				<trycatch property="exceptionMessage" reference="exceptionObject">
+
+					<try>
+
+						<!-- Default to OK -->
+
+						<var name="stepResult" value="OK" />
+						<var name="stepResultMessage" value="" />
+
+						<!-- Get start time -->
+
+						<var name="startTime" unset="true" />
+						<tstamp>
+							<format property="startTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+						</tstamp>
+
+						<!-- Call target to do the work -->
+
+						<antcall target="-overrideApp">
+							<param name="bar.name" value="@{barName}" />
+							<param name="bar.properties" value="${bar.@{barName}.properties}" />
+							<param name="bar.applicationsList" value="${bar.@{barName}.applications.list}" />
+						</antcall>
+
+					</try>
+
+					<catch>
+
+						<!-- Set result to failed -->
+
+						<var name="stepResult" unset="true" />
+						<var name="stepResultMessage" unset="true" />
+						<var name="stepResult" value="FAIL" />
+						<var name="stepResultMessage" value="[${exceptionMessage}]" />
+
+						<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="&quot;" replace="" global="true" defaultValue="${stepResultMessage}" />
+						<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="${line.separator}" replace=" " global="true" defaultValue="${stepResultMessage}" />
+
+						<if>
+							<not>
+								<isset property="exceptionObject" />
+							</not>
+							<then>
+								<var name="exceptionObject" value="None" />
+							</then>
+						</if>
+
+						<fail message="Exception encountered. Message = [${exceptionMessage}]; Object = [${exceptionObject}]." />
+
+					</catch>
+
+					<finally>
+
+						<!-- Write out a DevOps pipeline event if a URL is provided for the database - this allows monitoring of DevOps activity -->
+
+						<if>
+							<and>
+								<isset property="pipelineEvents.url" />
+								<not>
+									<or>
+										<equals arg1="${pipelineEvents.url}" arg2="" />
+										<equals arg1="${pipelineEvents.url}" arg2=" " />
+									</or>
+								</not>
+							</and>
+							<then>
+
+								<!-- Get end time -->
+
+								<var name="endTime" unset="true" />
+								<tstamp>
+									<format property="endTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+								</tstamp>
+
+								<!-- Post pipeline event -->
+
+								<antcall target="-postPipelineEvent">
+									<param name="pipelineEvents.url" value="${pipelineEvents.url}" />
+									<param name="pipeline.phase" value="Override" />
+									<param name="pipeline.id" value="${buildLabel}" />
+									<param name="pipeline.user" value="${userId}" />
+									<param name="pipeline.application" value="${pipelineEvents.application}" />
+									<param name="pipeline.component" value="@{barName}" />
+									<param name="pipeline.runtimePlatform" value="IBM Integration Bus" />
+									<param name="pipeline.location" value="${engineId}" />
+									<param name="pipeline.locationType" value="${pbc.platform}" />
+									<param name="pipeline.input" value="[@{barName}]" />
+									<param name="pipeline.inputType" value="[Broker Archive]" />
+									<param name="pipeline.output" value="[@{barName}] overriden with [${bar.@{barName}.properties}]" />
+									<param name="pipeline.outputType" value="[Broker Archive] overriden with [Override Properties File]" />
+									<param name="pipeline.startTime" value="${startTime}" />
+									<param name="pipeline.endTime" value="${endTime}" />
+									<param name="pipeline.result" value="${stepResult}" />
+									<param name="pipeline.resultMessage" value="${stepResultMessage}" />
+
+								</antcall>
+							</then>
+						</if>
+					</finally>
+
+				</trycatch>
+
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="-deployAppNoInit">
+
+		<startBuildActivity label="Deploy the bars" activityIdProperty="deployBars" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Set switches -->
+
+		<var name="iib_clean_deploy_switch" unset="true" />
+		<var name="iib_clean_deploy_switch" value="" />
+
+		<if>
+			<isset property="IIB_TIMEOUT" />
+			<then>
+				<var name="iib_timeout_switch" value="-w ${IIB_TIMEOUT}" />
+			</then>
+			<else>
+				<var name="iib_timeout_switch" value="" />
+			</else>
+		</if>
+
+		<!-- Create empty host clean list to use to determine if execution group has already been cleaned for this deploy (don't want to clean it more than once) -->
+
+		<touch file="${BUILD_TMP}/@{iibRemoteBrokerHost}.${TMP_CLEAN_LIST_NAME}" />
+
+		<!-- For each bar file... -->
+
+		<for list="${bars.list}" param="barName" delimiter=";">
+
+			<sequential>
+
+				<trycatch property="exceptionMessage" reference="exceptionObject">
+
+					<try>
+
+						<!-- Default to OK -->
+
+						<var name="stepResult" value="OK" />
+						<var name="stepResultMessage" value="" />
+
+						<!-- Get start time -->
+
+						<var name="startTime" unset="true" />
+						<tstamp>
+							<format property="startTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+						</tstamp>
+
+						<!-- Call target to do the work -->
+
+						<antcallback target="-deployApp" return="iib.executionGroup, iib.host, iib.port, iib.queueManager, iib.brokerFile">
+							<param name="bar.name" value="@{barName}" />
+							<param name="bar.brokerFile" value="${bar.@{barName}.brokerFile}" />
+						</antcallback>
+
+					</try>
+
+					<catch>
+
+						<!-- Set result to failed -->
+
+						<var name="stepResult" unset="true" />
+						<var name="stepResultMessage" unset="true" />
+						<var name="stepResult" value="FAIL" />
+						<var name="stepResultMessage" value="[${exceptionMessage}]" />
+
+						<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="&quot;" replace="" global="true" defaultValue="${stepResultMessage}" />
+						<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="${line.separator}" replace=" " global="true" defaultValue="${stepResultMessage}" />
+
+						<if>
+							<not>
+								<isset property="exceptionObject" />
+							</not>
+							<then>
+								<var name="exceptionObject" value="None" />
+							</then>
+						</if>
+
+						<fail message="Exception encountered. Message = [${exceptionMessage}]; Object = [${exceptionObject}]." />
+
+					</catch>
+
+					<finally>
+
+						<!-- Write out a DevOps pipeline event if a URL is provided for the database - this allows monitoring of DevOps activity -->
+
+						<if>
+							<and>
+								<isset property="pipelineEvents.url" />
+								<not>
+									<or>
+										<equals arg1="${pipelineEvents.url}" arg2="" />
+										<equals arg1="${pipelineEvents.url}" arg2=" " />
+									</or>
+								</not>
+							</and>
+							<then>
+
+								<!-- Get end time -->
+
+								<var name="endTime" unset="true" />
+								<tstamp>
+									<format property="endTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+								</tstamp>
+
+								<!-- Post pipeline event -->
+
+								<antcall target="-postPipelineEvent">
+									<param name="pipelineEvents.url" value="${pipelineEvents.url}" />
+									<param name="pipeline.phase" value="Deploy" />
+									<param name="pipeline.id" value="${buildLabel}" />
+									<param name="pipeline.user" value="${userId}" />
+									<param name="pipeline.application" value="${pipelineEvents.application}" />
+									<param name="pipeline.component" value="@{barName}" />
+									<param name="pipeline.runtimePlatform" value="IBM Integration Bus" />
+									<param name="pipeline.location" value="${engineId}" />
+									<param name="pipeline.locationType" value="${pbc.platform}" />
+									<param name="pipeline.input" value="[@{barName}]" />
+									<param name="pipeline.inputType" value="[Broker Archive]" />
+									<param name="pipeline.output" value="[@{barName}] to [${iib.executionGroup}] on [${iib.host}:${iib.port}] and [${iib.queueManager}] specified by [${iib.brokerFile}]" />
+									<param name="pipeline.outputType" value="[Broker Archive] to [Execution Group] on [Host:Port] and [Queue Manager] specified by [Broker File]" />
+									<param name="pipeline.startTime" value="${startTime}" />
+									<param name="pipeline.endTime" value="${endTime}" />
+									<param name="pipeline.result" value="${stepResult}" />
+									<param name="pipeline.resultMessage" value="${stepResultMessage}" />
+								</antcall>
+							</then>
+						</if>
+					</finally>
+
+				</trycatch>
+
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="overrideAndDeployApp" depends="-init, -initAppDeploy">
+
+		<dirset id="dist.contents1" dir="${ASSEMBLY_BARS}/" includes="*" />
+		<property name="prop.dist.contents1" refid="dist.contents1" />
+		<echo>Dir contents: ${prop.dist.contents1}</echo>
+
+		<antcall target="-overrideAppNoInit" />
+		<antcall target="-deployAppNoInit" />
+
+	</target>
+
+	<target name="restartApp" depends="-init">
+
+		<trycatch>
+
+			<try>
+
+				<!-- Default to OK -->
+
+				<var name="stepResult" value="OK" />
+				<var name="stepResultMessage" value="" />
+
+				<!-- Get start time -->
+
+				<var name="startTime" unset="true" />
+				<tstamp>
+					<format property="startTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+				</tstamp>
+
+				<!-- Call targets to do the work -->
+
+
+				<antcall target="-stopApp" />
+				<antcall target="-startApp" />
+
+			</try>
+
+			<catch>
+
+				<!-- Set result to failed -->
+
+				<var name="stepResult" unset="true" />
+				<var name="stepResultMessage" unset="true" />
+				<var name="stepResult" value="FAIL" />
+				<var name="stepResultMessage" value="[${exceptionMessage}]" />
+
+				<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="&quot;" replace="" global="true" defaultValue="${stepResultMessage}" />
+				<propertyregex property="stepResultMessage" override="true" input="${stepResultMessage}" regexp="${line.separator}" replace=" " global="true" defaultValue="${stepResultMessage}" />
+
+				<if>
+					<not>
+						<isset property="exceptionObject" />
+					</not>
+					<then>
+						<var name="exceptionObject" value="None" />
+					</then>
+				</if>
+
+				<fail message="Exception encountered. Message = [${exceptionMessage}]; Object = [${exceptionObject}]." />
+
+			</catch>
+
+			<finally>
+
+				<!-- Write out a DevOps pipeline event if a URL is provided for the database - this allows monitoring of DevOps activity -->
+
+				<if>
+					<and>
+						<isset property="pipelineEvents.url" />
+						<not>
+							<or>
+								<equals arg1="${pipelineEvents.url}" arg2="" />
+								<equals arg1="${pipelineEvents.url}" arg2=" " />
+							</or>
+						</not>
+					</and>
+					<then>
+
+						<!-- Get end time -->
+
+						<var name="endTime" unset="true" />
+						<tstamp>
+							<format property="endTime" pattern="yyyy-MM-dd'T'HH:mm:ssZ" />
+						</tstamp>
+
+						<!-- Post pipeline event -->
+
+						<antcall target="-postPipelineEvent">
+							<param name="pipelineEvents.url" value="${pipelineEvents.url}" />
+							<param name="pipeline.phase" value="Restart" />
+							<param name="pipeline.id" value="${buildLabel}" />
+							<param name="pipeline.user" value="${userId}" />
+							<param name="pipeline.application" value="${pipelineEvents.application}" />
+							<param name="pipeline.component" value="@{barName}" />
+							<param name="pipeline.runtimePlatform" value="IBM Integration Bus" />
+							<param name="pipeline.location" value="${engineId}" />
+							<param name="pipeline.locationType" value="${pbc.platform}" />
+							<param name="pipeline.input" value="[@{barName}]" />
+							<param name="pipeline.inputType" value="[Broker Archive]" />
+							<param name="pipeline.output" value="[@{barName}] restarted" />
+							<param name="pipeline.outputType" value="[Broker Archive] restarted" />
+							<param name="pipeline.startTime" value="${startTime}" />
+							<param name="pipeline.endTime" value="${endTime}" />
+							<param name="pipeline.result" value="${stepResult}" />
+							<param name="pipeline.resultMessage" value="${stepResultMessage}" />
+						</antcall>
+					</then>
+				</if>
+			</finally>
+		</trycatch>
+
+	</target>
+
+	<target name="restartBrokers" depends="-init">
+
+		<if>
+			<equals arg1="${RESTART_BROKER}" arg2="Y" />
+			<then>
+
+				<startBuildActivity label="Restart the brokers" activityIdProperty="restartBrokers" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<!-- For each host... -->
+
+				<for list="${IIB_HOSTS.list}" param="hostName" delimiter=";">
+
+					<sequential>
+
+						<antcall target="-restartBrokers" />
+
+					</sequential>
+				</for>
+
+			</then>
+			<else>
+				<echo message="NOTE: Not restarting broker as RESTART_BROKER not set to 'Y'." />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="stopFlows" depends="-init">
+
+		<antcall target="-stopFlows" />
+
+	</target>
+
+	<target name="stopApp" depends="-init">
+
+		<antcall target="-stopApp" />
+
+	</target>
+
+	<target name="startApp" depends="-init">
+
+		<antcall target="-startApp" />
+
+	</target>
+
+	<target name="-stopFlows" depends="">
+
+		<!-- Only look to stop flows if IIB_STOP_HOSTS.list is set -->
+
+		<if>
+			<isset property="IIB_STOP_HOSTS.list" />
+			<then>
+
+				<startBuildActivity label="Stopping message flows" activityIdProperty="stopFlows" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<!-- For each host that we need to stop flows on... -->
+
+				<for list="${IIB_STOP_HOSTS.list}" param="iibRemoteBrokerHost" delimiter=";">
+					<sequential>
+
+						<!-- For each bar file... -->
+
+						<for list="${bars.list}" param="barName" delimiter=";">
+							<sequential>
+
+								<var name="IIB_PORT" unset="true" />
+								<var name="IIB_QMGR" unset="true" />
+								<var name="execGroup" unset="true" />
+								<propertycopy property="IIB_PORT" from="IIB_PORT.@{iibRemoteBrokerHost}" />
+								<propertycopy property="IIB_QMGR" from="IIB_QMGR.@{iibRemoteBrokerHost}" />
+
+								<!-- Unzip bar to tmp in case we need this later to check for flows -->
+
+								<unzip src="${ASSEMBLY_BARS}/@{barName}.bar" dest="${BUILD_TMP}" />
+
+								<!-- Get execution group from bar or otherwise default for all bars -->
+
+								<if>
+									<isset property="bar.@{barName}.execGroup" />
+									<then>
+										<propertycopy property="execGroup" from="bar.@{barName}.execGroup" />
+									</then>
+									<else>
+										<propertycopy property="execGroup" from="IIB_EXEC_GRP" />
+									</else>
+								</if>
+
+								<if>
+									<isset property="bar.@{barName}.stopFlows.list" />
+									<then>
+
+										<!-- For each flow that needs to be stopped... -->
+
+										<for list="${bar.@{barName}.stopFlows.list}" param="stopFlow" delimiter=";">
+											<sequential>
+
+												<echo message="Found flow that needs to be stopped: @{stopFlow}" />
+
+												<!-- Check each application to see which one the flow belongs to... -->
+
+												<for list="${bar.applicationsList}" param="application" delimiter=";">
+													<sequential>
+
+														<!-- Strip out single quotes from application string -->
+
+														<propertyregex property="strippedApplication" input="@{application}" regexp="&apos;" replace="" global="true" defaultValue="@{application}" />
+
+														<!-- Create dir for app in tmp -->
+
+														<mkdir dir="${BUILD_TMP}/appSource/${strippedApplication}" />
+
+														<!-- Check if we have source local -->
+
+														<if>
+															<available file="${BUILD_SOURCE}/${strippedApplication}" type="dir" />
+
+															<then>
+
+																<!-- Copy source of app to tmp so that we can later look for the flow -->
+
+																<copy todir="${BUILD_TMP}/appSource/${strippedApplication}">
+																	<fileset dir="${BUILD_SOURCE}/${strippedApplication}">
+																		<include name="**" />
+																	</fileset>
+																</copy>
+
+															</then>
+
+															<else>
+
+																<!-- Unzip appzip to tmp - this contains the source so that we can later look for the flow -->
+
+																<unzip src="${BUILD_TMP}/${strippedApplication}.appzip" dest="${BUILD_TMP}/appSource/${strippedApplication}" />
+
+															</else>
+														</if>
+
+														<!-- If flow is part of this application (needs to be in root of application) then go ahead and stop it -->
+
+														<echo message="Checking for ${BUILD_TMP}/appSource/${strippedApplication}/@{stopFlow}.msgflow" />
+
+														<if>
+															<available file="${BUILD_TMP}/appSource/${strippedApplication}/@{stopFlow}.msgflow" type="file" />
+
+															<then>
+
+																<echo message="Found application for flow: @{application} for @{stopFlow}" />
+
+																<startBuildActivity label="Stopping @{stopFlow} flow (part of @{application} application)" parentActivityId="${stopFlows}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+																<antcall target="-stopFlow">
+
+																	<param name="iibApp" value="@{application}" />
+																	<param name="iibMsgFlow" value="@{stopFlow}" />
+																	<param name="execGroup" value="${execGroup}" />
+																	<param name="iibRemoteHost" value="@{iibRemoteBrokerHost}" />
+																	<param name="iibPort" value="${IIB_PORT}" />
+																	<param name="iibQMgr" value="${IIB_QMGR}" />
+
+																</antcall>
+
+															</then>
+
+														</if>
+
+														<!-- Otherwise do nothing -->
+
+													</sequential>
+												</for>
+
+											</sequential>
+										</for>
+
+									</then>
+									<else>
+
+										<echo message="NOTE: No flows to stop for @{barName}" />
+
+									</else>
+								</if>
+
+							</sequential>
+						</for>
+					</sequential>
+				</for>
+
+			</then>
+
+			<else>
+				<echo message="NOTE: Not stopping any flows as IIB_STOP_HOSTS.list is not set." />
+			</else>
+		</if>
+	</target>
+
+	<target name="-restartBrokers">
+
+
+
+		<!-- Restart broker for host -->
+
+		<var name="brokerName" unset="true" />
+		<var name="brokerName" value="${IIB_BROKER.@{hostName}}" />
+
+		<startBuildActivity label="Restart ${brokerName} broker on host @{hostName}" parentActivityId="${restartBrokers}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<antcall target="-restartBroker">
+			<param name="restartUser" value="${RESTART_USER_ID}" />
+			<param name="restartPassword" value="${RESTART_PASSWORD}" />
+			<param name="restartHost" value="@{hostName}" />
+			<param name="brokerName" value="${brokerName}" />
+		</antcall>
+
+
+
+	</target>
+
+	<target name="-stopFlow">
+
+		<!-- Write out trace -->
+
+		<echo message="Stopping message flow: ${BUILD_SUBSCRIPTS}/stopMessageFlow.sh ${iibApp} ${iibMsgFlow} - ${execGroup} ${MQSI_BIN} ${BUILD_HOME} ${iibRemoteHost} ${iibPort} ${iibQMgr} ${RTC_USER_ID} ${BUILD_LOGS}/stopMsgFlow-${iibApp}-${iibMsgFlow}-${iibRemoteHost}.log" />
+
+		<!-- Initialize timeout switch -->
+
+		<var name="iib_timeout_switch" unset="true" />
+		<var name="iib_timeout_switch" value="" />
+
+		<!-- If timeout has been set -->
+
+		<if>
+			<isset property="IIB_TIMEOUT" />
+			<then>
+
+				<!-- Set timeout switch -->
+
+				<var name="iib_timeout_switch" value="-w ${IIB_TIMEOUT}" />
+			</then>
+			<else>
+
+				<!-- No timeout switch -->
+
+				<var name="iib_timeout_switch" value="" />
+			</else>
+		</if>
+
+		<!-- Run stop message flow script -->
+
+		<exec dir="${user.dir}" executable="bash" output="${BUILD_LOGS}/IIBStopMsgFlow-${iibMsgFlow}-${iibRemoteHost}.log" failonerror="false" resultproperty="error.IIBStopMsgFlow.property">
+			<arg value="${BUILD_SUBSCRIPTS}/stopMsgFlow.sh" />
+			<arg value="${iibApp}" />
+			<arg value="${iibMsgFlow}" />
+			<arg value="" />
+			<arg value="${execGroup}" />
+			<arg value="${MQSI_BIN}" />
+			<arg value="${BUILD_HOME}" />
+			<arg value="${iibRemoteHost}" />
+			<arg value="${iibPort}" />
+			<arg value="${iibQMgr}" />
+			<arg value="${iib_timeout_switch}" />
+			<arg value="${BUILD_LOGS}/stopMsgFlow-${iibMsgFlow}-${iibRemoteHost}.log" />
+		</exec>
+
+		<!-- Check for errors -->
+
+		<antcall target="-checkIIBErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/IIBStopMsgFlow-${iibMsgFlow}-${iibRemoteHost}.log" />
+			<param name="fileToCheckLabel" value="Stop ${iibApp}-${iibMsgFlow} log file (with error description)." />
+			<param name="returnCode" value="${error.IIBStopMsgFlow.property}" />
+		</antcall>
+
+	</target>
+
+	<target name="-stopApp">
+
+		<!-- Strip out single quotes should they appear in the name -->
+
+		<propertyregex property="bar.application.safe" override="true" input="${bar.application}" regexp="'" replace="" defaultValue="${bar.application}" />
+
+		<!-- Log activity -->
+
+		<startBuildActivity label="Stopping application ${bar.application.safe} on ${iib.host}:${iib.port}" activityIdProperty="stopApp" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Run stop app script -->
+
+		<exec dir="${user.dir}" executable="bash" output="${BUILD_LOGS}/IIBStopApp-${bar.application}-${iib.host}.log" failonerror="false" resultproperty="error.IIBStopApp.property">
+			<env key="MQSI_CMP_USERNAME" value="${iib.userId}" />
+			<env key="MQSI_CMP_PASSWORD" value="${iib.password}" />
+			<arg value="${BUILD_SUBSCRIPTS}/stopApp.sh" />
+			<arg value="${bar.application.safe}" />
+			<arg value="" />
+			<arg value="${iib.execGrp}" />
+			<arg value="${MQSI_BIN}" />
+			<arg value="${BUILD_HOME}" />
+			<arg value="${iib.host}" />
+			<arg value="${iib.port}" />
+			<arg value="${iib.brokerFile}" />
+			<arg value="${BUILD_LOGS}/stopApp-${bar.application}-${iib.host}.log" />
+		</exec>
+
+		<!-- Check for errors -->
+
+		<antcall target="-checkIIBErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/IIBStopApp-${bar.application}-${iib.host}.log" />
+			<param name="fileToCheckLabel" value="Stop ${bar.application} log file (with error description)." />
+			<param name="returnCode" value="${error.IIBStopApp.property}" />
+		</antcall>
+
+		<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_LOGS}/IIBStopApp-${bar.application}-${iib.host}.log" label="Stop ${bar.application} log file." />
+
+	</target>
+
+	<target name="-startApp">
+
+		<!-- Strip out single quotes should they appear in the name -->
+
+		<propertyregex property="bar.application.safe" override="true" input="${bar.application}" regexp="'" replace="" defaultValue="${bar.application}" />
+
+		<!-- Log activity -->
+
+		<startBuildActivity label="Starting application ${bar.application.safe} on ${iib.host}:${iib.port}" activityIdProperty="stopApp" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Run start app script -->
+
+		<exec dir="${user.dir}" executable="bash" output="${BUILD_LOGS}/IIBStartApp-${bar.application}-${iib.host}.log" failonerror="false" resultproperty="error.IIBStartApp.property">
+			<env key="MQSI_CMP_USERNAME" value="${iib.userId}" />
+			<env key="MQSI_CMP_PASSWORD" value="${iib.password}" />
+			<arg value="${BUILD_SUBSCRIPTS}/startApp.sh" />
+			<arg value="${bar.application.safe}" />
+			<arg value="" />
+			<arg value="${iib.execGrp}" />
+			<arg value="${MQSI_BIN}" />
+			<arg value="${BUILD_HOME}" />
+			<arg value="${iib.host}" />
+			<arg value="${iib.port}" />
+			<arg value="${iib.brokerFile}" />
+			<arg value="${BUILD_LOGS}/startApp-${bar.application}-${iib.host}.log" />
+		</exec>
+
+		<!-- Check for errors -->
+
+		<antcall target="-checkIIBErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/IIBStartApp-${bar.application}-${iib.host}.log" />
+			<param name="fileToCheckLabel" value="Start ${bar.application} log file (with error description)." />
+			<param name="returnCode" value="${error.IIBStartApp.property}" />
+		</antcall>
+
+		<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_LOGS}/IIBStartApp-${bar.application}-${iib.host}.log" label="Start ${bar.application} log file." />
+
+	</target>
+
+	<target name="-assembleApp" depends="">
+
+		<!-- Check to see if the bar is in the use existing bar list -->
+
+		<var name="useExistingBar" unset="true" />
+		<var name="useExistingBar" value="FALSE" />
+
+		<for list="${useExistingBars.list}" param="useExistingBarName" delimiter=";">
+			<sequential>
+
+				<if>
+					<equals arg1="${bar.name}" arg2="@{useExistingBarName}" />
+					<then>
+						<var name="useExistingBar" value="TRUE" />
+					</then>
+				</if>
+
+			</sequential>
+		</for>
+
+		<!-- Either assemble a new bar use the existing bar -->
+
+		<if>
+			<equals arg1="${useExistingBar}" arg2="FALSE" />
+			<then>
+
+				<!-- Copy source files to temp area for build (so we can adjust classpaths and exclude unwanted folders/files) -->
+
+				<if>
+					<isset property="iib.excludeFromBars" />
+					<then>
+
+						<copy todir="${BUILD_TMP}/source">
+							<fileset dir="${BUILD_SOURCE}">
+								<include name="**" />
+								<include name="**/.*" />
+								<include name=".*" />
+								<exclude name="${iib.excludeFromBars}" />
+							</fileset>
+						</copy>
+
+					</then>
+					<else>
+
+						<copy todir="${BUILD_TMP}/source">
+							<fileset dir="${BUILD_SOURCE}">
+								<include name="**" />
+								<include name="**/.*" />
+								<include name=".*" />
+							</fileset>
+						</copy>
+
+					</else>
+				</if>
+
+				<dirset id="dist.contents" dir="${BUILD_TMP}/source" includes="**/*" />
+				<property name="prop.dist.contents" refid="dist.contents" />
+				<echo message="Dir = ${prop.dist.contents}" />
+
+				<!-- Replace vars in classpath files -->
+
+				<replace dir="${BUILD_TMP}/source" value="lib&quot; path=&quot;${COMMON_JARS_HOME}">
+					<include name="**/.classpath" />
+					<replacetoken>var&quot; path=&quot;COMMON_JARS_HOME</replacetoken>
+				</replace>
+
+				<!-- Continue with assembly steps -->
+
+				<var name="barDeployableFiles" unset="true" />
+				<var name="barTempDeployableFiles" unset="true" />
+				<var name="barProjects" unset="true" />
+				<var name="barTempProjects" unset="true" />
+				<var name="barApplications" unset="true" />
+				<var name="barTempApplications" unset="true" />
+				<var name="barLibrariesSwitch" unset="true" />
+				<var name="barTempLibrariesSwitch" unset="true" />
+
+				<!-- If bar has an application we use the new style of building the application -->
+
+				<if>
+					<isset property="bar.applicationsList" />
+					<then>
+
+						<propertycopy property="barTempApplications" from="bar.applicationsList" />
+						<propertyregex property="barApplications" override="true" input="${barTempApplications}" regexp=";" replace=" " defaultValue="${barTempApplications}" />
+
+					</then>
+					<else>
+
+						<!-- Otherwise we use the old style of buildiung projects -->
+
+						<propertycopy property="barTempProjects" from="bar.projectsList" />
+						<propertyregex property="barProjects" override="true" input="${barTempProjects}" regexp=";" replace=" " defaultValue="${barTempProjects}" />
+					</else>
+				</if>
+
+				<!-- If we have a list of libraries ... -->
+
+				<if>
+					<isset property="libraries.list" />
+					<then>
+
+						<!-- If the list is empty then fail -->
+
+						<if>
+							<equals arg1="${libraries.list}" arg2="" />
+							<then>
+
+								<fail message="Do not set libraries.list to an empty string. It must either have a value, or not be set at all." />
+							</then>
+						</if>
+
+						<!-- Otherwise set the libraries switch -->
+
+						<var name="barTempLibrariesSwitch" value="-l ${libraries.list}" />
+						<propertyregex property="barLibrariesSwitch" override="true" input="${barTempLibrariesSwitch}" regexp=";" replace=" " defaultValue="${barTempLibrariesSwitch}" />
+
+					</then>
+					<else>
+
+						<!-- Otherwise leave the libraries switch empty -->
+
+						<var name="barLibrariesSwitch" value="" />
+					</else>
+				</if>
+
+				<!-- Check if we need to deploy as source (by default we do) -->
+
+				<if>
+					<and>
+						<isset property="bar.deployAsSource" />
+						<equals arg1="${bar.deployAsSource}" arg2="false" />
+					</and>
+					<then>
+
+						<var name="deployAsSourceSwitch" value="" />
+
+					</then>
+					<else>
+
+						<!-- Otherwise set deploy as source switch -->
+
+						<var name="deployAsSourceSwitch" value="-deployAsSource" />
+
+						<echo message="Setting -deployAsSource switch for build" />
+
+					</else>
+
+				</if>
+
+				<!-- If there is a list of files to deploy, make it a space delimited list -->
+
+				<if>
+					<isset property="bar.deployableFiles" />
+					<then>
+						<propertycopy property="barTempDeployableFiles" from="bar.deployableFiles" />
+						<propertyregex property="barDeployableFiles" override="true" input="${barTempDeployableFiles}" regexp=";" replace=" " defaultValue="${barTempDeployableFiles}" />
+					</then>
+				</if>
+
+				<!-- Assemble the bar -->
+
+				<startBuildActivity label="Assemble the ${bar.name} bar" parentActivityId="${creatingBars}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<!-- Assemble as an application -->
+
+				<if>
+					<isset property="bar.applicationsList" />
+					<then>
+
+						<echo message="Building applications: ${barApplications}" />
+
+						<exec dir="./" executable="${IIT_BIN}/../mqsicreatebar" output="${BUILD_LOGS}/assemble-${bar.name}.log" failonerror="false" resultproperty="error.IIBBuild">
+							<arg line="-configuration ${BUILD_TMP} -data ${BUILD_TMP}/source -b ${BUILD_OUTPUT}/${bar.name}.bar -a ${barApplications} ${barLibrariesSwitch} ${deployAsSourceSwitch} -trace" />
+						</exec>
+
+					</then>
+					<else>
+
+						<!-- Assemble as one or more projects -->
+
+						<echo message="Building projects: ${barProjects} (with deployableFiles ${barDeployableFiles})" />
+
+						<exec dir="./" executable="${IIT_BIN}/../mqsicreatebar" output="${BUILD_LOGS}/assemble-${bar.name}.log" failonerror="false" resultproperty="error.IIBBuild">
+							<arg line="-data ${BUILD_TMP}/source -b ${BUILD_OUTPUT}/${bar.name}.bar -p ${barProjects} -o ${barDeployableFiles} ${barLibrariesSwitch} ${deployAsSourceSwitch} -trace" />
+						</exec>
+
+					</else>
+				</if>
+
+				<!-- Publish logs -->
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_LOGS}/assemble-${bar.name}.log" label="Assemble ${bar.name} log file" />
+
+				<!-- Check for errors -->
+
+				<antcall target="-checkIIBErrors">
+					<param name="fileToCheck" value="${BUILD_LOGS}/assemble-${bar.name}.log" />
+					<param name="fileToCheckLabel" value="Assemble ${bar.name} log file (with error description)." />
+					<param name="returnCode" value="${error.IIBBuild}" />
+				</antcall>
+
+				<!-- Publish bar -->
+
+				<artifactFilePublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_OUTPUT}/${bar.name}.bar" label="${bar.name} bar" />
+
+			</then>
+			<else>
+
+				<startBuildActivity label="Skipping assembly of the ${bar.name} bar as it appears in the useExistingBars.list property" parentActivityId="${creatingBars}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+				<echo message="NOTE: Skipping assembly of the ${bar.name} bar as it appears in the useExistingBars.list property" />
+
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-overrideApp" depends="">
+
+		<!-- Apply general override -->
+
+		<var name="barApplications" unset="true" />
+		<var name="barProperties" unset="true" />
+
+		<if>
+			<isset property="bar.applicationsList" />
+			<then>
+				<propertycopy property="barApplications" from="bar.applicationsList" />
+			</then>
+		</if>
+
+		<if>
+			<isset property="bar.properties" />
+			<then>
+				<propertycopy property="barProperties" from="bar.properties" />
+
+				<startBuildActivity label="Overriding properties for ${bar.name} bar" parentActivityId="${overrideBars}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+				<!-- Create temp folder to inspect bar -->
+
+				<mkdir dir="${BUILD_TMP}/inspect.${bar.name}" />
+
+				<dirset id="dist.contents2" dir="${ASSEMBLY_BARS}/" includes="*" />
+				<property name="prop.dist.contents2" refid="dist.contents2" />
+				<echo>Dir contents: ${prop.dist.contents2}</echo>
+
+				<!-- Unzip bar in temp folder -->
+
+				<unzip src="${ASSEMBLY_BARS}/${bar.name}.bar" dest="${BUILD_TMP}/inspect.${bar.name}" />
+
+				<!-- Create empty bar.contents property -->
+
+				<var name="bar.contents" unset="true" />
+				<var name="bar.contents" value="" />
+
+				<!-- Write out entries for each *.appzip and *.libzip to bar.contents -->
+
+				<for param="file">
+					<path>
+						<fileset dir="${BUILD_TMP}/inspect.${bar.name}">
+							<include name="*.*zip" />
+						</fileset>
+					</path>
+					<sequential>
+
+						<var name="fileName" unset="true" />
+						<basename property="fileName" file="@{file}" />
+
+						<var name="tempName" unset="true" />
+						<var name="tempName" value="${bar.contents}" />
+						<var name="bar.contents" unset="true" />
+						<var name="bar.contents" value="${tempName} ${fileName}" />
+
+						<echo message="Added ${fileName} to bar.contents: ${bar.contents}" />
+
+					</sequential>
+				</for>
+
+				<!-- If bar.contents is not empty then apply override to application bar -->
+
+				<if>
+					<not>
+						<equals arg1="bar.contents" arg2="" />
+					</not>
+					<then>
+
+						<for list="${bar.contents}" param="zipName" delimiter=" ">
+
+							<sequential>
+
+								<!-- Strip out single quotes or spaces from application string to use in log file name -->
+
+								<var name="strippedZip" unset="true" />
+								<propertyregex property="strippedZip" input="@{zipName}" regexp="&apos;| " replace="" global="true" defaultValue="@{zipName}" />
+
+								<!-- Get type of zip -->
+
+								<var name="zipType" unset="true" />
+								<var name="zipJustName" unset="true" />
+								<propertyregex property="zipType" input="@{zipName}" regexp=".*(\..*)" select="\1" />
+								<propertyregex property="zipJustName" input="@{zipName}" regexp="(.*)\..*" select="\1" />
+
+								<echo message="zipType is ${zipType} and zipJustName is ${zipJustName}" />
+
+								<if>
+									<equals arg1="${zipType}" arg2=".appzip" />
+									<then>
+										<!-- If an appzip then override application -->
+
+										<echo message="Overriding application @{zipName} : ./mqsiapplybaroverride -b ${ASSEMBLY_BARS}/${bar.name}.bar -k ${zipJustName} -r -p ${OVERRIDES_PATH}/${barProperties} -v ${BUILD_LOGS}/override-${bar.name}-${strippedZip}.log" />
+
+										<exec executable="/bin/sh" output="${BUILD_LOGS}/IIBOverride.${bar.name}.log" failonerror="false" resultproperty="error.IIBOverride">
+											<arg value="-c" />
+											<arg value="cd ${IIT_BIN}/../../server/bin ; . ./mqsiprofile ; mqsiapplybaroverride -b ${ASSEMBLY_BARS}/${bar.name}.bar -k ${zipJustName} -r -p ${OVERRIDES_PATH}/${barProperties} -v ${BUILD_LOGS}/override-${bar.name}-${strippedZip}.log" />
+										</exec>
+									</then>
+
+								</if>
+
+								<if>
+									<or>
+										<equals arg1="${zipType}" arg2=".shlibzip" />
+										<equals arg1="${zipType}" arg2=".libzip" />
+									</or>
+									<then>
+										<!-- If a libzip then override library -->
+
+										<echo message="Overriding library @{zipName} : ./mqsiapplybaroverride -b ${ASSEMBLY_BARS}/${bar.name}.bar -y ${zipJustName} -p ${OVERRIDES_PATH}/${barProperties} -v ${BUILD_LOGS}/override-${bar.name}-${strippedZip}.log" />
+
+										<exec executable="/bin/sh" output="${BUILD_LOGS}/IIBOverride.${bar.name}.log" failonerror="false" resultproperty="error.IIBOverride">
+											<arg value="-c" />
+											<arg value="cd ${IIT_BIN}/../../server/bin ; . ./mqsiprofile ; mqsiapplybaroverride -b ${ASSEMBLY_BARS}/${bar.name}.bar -y ${zipJustName} -p ${OVERRIDES_PATH}/${barProperties} -v ${BUILD_LOGS}/override-${bar.name}-${strippedZip}.log" />
+										</exec>
+									</then>
+
+								</if>
+
+								<antcall target="-checkIIBErrors">
+									<param name="fileToCheck" value="${BUILD_LOGS}/override-${bar.name}-${strippedZip}.log" />
+									<param name="fileToCheckLabel" value="Override ${bar.name} @{zipName} log file (with error description)." />
+									<param name="returnCode" value="${error.IIBOverride}" />
+								</antcall>
+
+								<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_LOGS}/override-${bar.name}-${strippedZip}.log" label="Override ${bar.name} @{zipName} log file" />
+
+							</sequential>
+						</for>
+
+					</then>
+
+					<!-- Apply override to project-based (i.e. non application-based) bar -->
+
+					<else>
+
+						<echo message="Overriding project-based bar : ./mqsiapplybaroverride -b ${ASSEMBLY_BARS}/${bar.name}.bar -p ${OVERRIDES_PATH}/${barProperties} -v ${BUILD_LOGS}/override-${bar.name}.log" />
+
+						<exec executable="/bin/sh" output="${BUILD_LOGS}/IIBOverride.${bar.name}.log" failonerror="false" resultproperty="error.IIBOverride">
+							<arg value="-c" />
+							<arg value="cd ${IIT_BIN}/../../server/bin ; . ./mqsiprofile ; mqsiapplybaroverride -b ${ASSEMBLY_BARS}/${bar.name}.bar -p ${OVERRIDES_PATH}/${barProperties} -v ${BUILD_LOGS}/override-${bar.name}.log" />
+						</exec>
+
+						<antcall target="-checkIIBErrors">
+							<param name="fileToCheck" value="${BUILD_LOGS}/override-${bar.name}.log" />
+							<param name="fileToCheckLabel" value="Override ${bar.name} log file (with error description)." />
+							<param name="returnCode" value="${error.IIBOverride}" />
+						</antcall>
+
+						<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_LOGS}/override-${bar.name}.log" label="Override ${bar.name} log file" />
+
+					</else>
+				</if>
+
+				<!-- Publish overridden BAR file -->
+
+				<artifactFilePublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${ASSEMBLY_BARS}/${bar.name}.bar" label="${bar.name} bar (with override applied - ${barProperties})" />
+
+			</then>
+		</if>
+
+	</target>
+
+	<target name="-deployApp" depends="">
+
+		<!-- Clear variables -->
+
+		<var name="iib.host" unset="true" />
+		<var name="iib.port" unset="true" />
+		<var name="iib.executionGroup" unset="true" />
+		<var name="iib.queueManager" unset="true" />
+		<var name="iib.brokerFile" unset="true" />
+		<var name="barToDeploy" unset="true" />
+
+		<!-- Get path for broker file -->
+
+		<dirname property="brokerFileDir" file="${bar.brokerFile}" />
+
+		<!-- List all contents of broker file path for troubleshooting purposes -->
+
+		<fileset id="brokerFileDirContents" dir="${brokerFileDir}" includes="*" />
+		<property name="prop.brokerFileDirContents" refid="brokerFileDirContents" />
+		<echo message="brokerFileDirContents = [${prop.brokerFileDirContents}]" />
+
+		<!-- Load text from broker file -->
+
+		<echo message="Using general broker file ${bar.brokerFile}" />
+
+		<var name="iib.brokerFile" value="${bar.brokerFile}" />
+
+		<!-- Set host, port and queue manager from broker file (these are so they can be written out and used in variable names -->
+
+		<loadfile property="iib.brokerFileContents" srcFile="${iib.brokerFile}" />
+
+		<echo message="Loaded brokerFile=${iib.brokerFile}" />
+
+		<!-- Set host to use -->
+
+		<propertyregex property="iib.host" input="${iib.brokerFileContents}" regexp="host=&quot;([^&quot;]*)" select="\1" />
+
+		<echo message="iib.host=${iib.host}" />
+
+		<!-- Set port to use  -->
+
+		<propertyregex property="iib.port" input="${iib.brokerFileContents}" regexp="listenerPort=&quot;([^&quot;]*)" select="\1" />
+
+		<echo message="iib.port=${iib.port}" />
+
+		<!-- Set queue manager to use  -->
+
+		<propertyregex property="iib.queueManager" input="${iib.brokerFileContents}" regexp="integrationNodeName=&quot;([^&quot;]*)" select="\1" />
+
+		<echo message="iib.queueManager=${iib.queueManager}" />
+
+		<!-- Set execution group to use  -->
+
+		<if>
+			<isset property="IIB_EXEC_GRP" />
+			<then>
+				<propertycopy property="iib.executionGroup" from="IIB_EXEC_GRP" />
+			</then>
+			<else>
+				<fail message="No execution group set. Either set the execution group variable." />
+			</else>
+		</if>
+
+		<echo message="iib.executionGroup=${iib.executionGroup}" />
+
+		<var name="barToDeploy" value="${ASSEMBLY_BARS}/${bar.name}.bar" />
+		<startBuildActivity label="Deploying the ${bar.name} bar to ${iib.executionGroup} execution group on ${iib.host}.${iib.port}" parentActivityId="${deployBars}" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<!-- Deploy the bar with userId/password (passing user and password as environment vars) -->
+
+		<echo message="Deploy using broker file ${iib.brokerFile} along with user id (${iib.userId}) and password *********" />
+
+		<exec dir="${user.dir}" executable="sh" output="${BUILD_LOGS}/IIBDeploy.${bar.name}.${iib.host}.${iib.port}.log" failonerror="false" resultproperty="error.IIBDeploy.property">
+			<env key="MQSI_CMP_USERNAME" value="${iib.userId}" />
+			<env key="MQSI_CMP_PASSWORD" value="${iib.password}" />
+			<arg value="${BUILD_SUBSCRIPTS}/deployBar.sh" />
+			<arg value="${barToDeploy}" />
+			<arg value="" />
+			<arg value="${iib.executionGroup}" />
+			<arg value="${IIT_BIN}" />
+			<arg value="${MQSI_BIN}" />
+			<arg value="${BUILD_HOME}" />
+			<arg value="" />
+			<arg value="" />
+			<arg value="" />
+			<arg value="" />
+			<arg value="" />
+			<arg value="${iib.brokerFile}" />
+			<arg value="${iib_clean_deploy_switch}" />
+			<arg value="${iib_timeout_switch}" />
+			<arg value="${BUILD_LOGS}/deploy-${bar.name}-${iib.host}.log" />
+		</exec>
+
+		<antcall target="-checkIIBErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/IIBDeploy.${bar.name}.${iib.host}.${iib.port}.log" />
+			<param name="fileToCheckLabel" value="Deploy ${bar.name} log file (with error description)." />
+			<param name="returnCode" value="${error.IIBDeploy.property}" />
+		</antcall>
+
+		<antcall target="-checkIIBErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/deploy-${bar.name}-${iib.host}.log" />
+			<param name="fileToCheckLabel" value="Deploy ${bar.name} log file (with error description)." />
+			<param name="returnCode" value="${error.IIBDeploy.property}" />
+			<param name="skipLogParse" value="true" />
+		</antcall>
+
+	</target>
+
+	<target name="-activateAppMonitoring" depends="">
+
+		<startBuildActivity label="Activate monitoring for bars" activityIdProperty="monitorBars" autoComplete="true" buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" />
+
+		<if>
+			<isset property="IIB_HOSTS.list" />
+			<then>
+				<echo message="Activate monitoring on hosts ${IIB_HOSTS.list}" />
+			</then>
+			<else>
+				<var name="IIB_HOSTS.list" value="NO_HOSTS" />
+			</else>
+		</if>
+
+		<!-- For each host to activate monitoring on... -->
+
+		<for list="${IIB_HOSTS.list}" param="iibRemoteBrokerHost" delimiter=";">
+			<sequential>
+
+				<!-- For each bar file... -->
+
+				<for list="${bars.list}" param="barName" delimiter=";">
+
+					<sequential>
+
+						<var name="IIB_QMGR" unset="true" />
+						<var name="execGroup" unset="true" />
+						<var name="barApplications" unset="true" />
+
+						<!-- Check if we need to do a monitoring profile activation for this bar -->
+
+						<if>
+							<isset property="bar.@{barName}.monitoringProfile" />
+							<then>
+
+								<!-- Check that the necessary properties are set -->
+
+								<if>
+									<not>
+										<and>
+											<isset property="IIB_BROKER" />
+											<isset property="OS_USER_ID" />
+											<isset property="OS_KEYFILE" />
+											<isset property="bar.applicationsList" />
+										</and>
+									</not>
+									<then>
+										<fail>In order to activate monitoring on the remote machine you need 1. IIB_BROKER set to the name of the node on the remote machine 2. to set the OS_USER_ID property to the user with ssh priveleges on the remote machine 3. a private ssh key for the remote machine that has been transferred to the build machine 4. set the property OS_KEYFILE to the path of this file on the build machine and 5. you need to set bar.{barname}.applications.list with the application(s) to activate monitoring of".</fail>
+									</then>
+								</if>
+
+								<!-- Get queue manager -->
+
+								<if>
+									<isset property="IIB_QMGR.@{iibRemoteBrokerHost}" />
+									<then>
+										<propertycopy property="IIB_QMGR" from="IIB_QMGR.@{iibRemoteBrokerHost}" />
+									</then>
+									<else>
+										<var name="IIB_QMGR" value="NO_QMGR" />
+									</else>
+								</if>
+
+								<!-- Get execution group for bar or use default for all bars -->
+
+								<if>
+									<isset property="bar.@{barName}.execGroup" />
+									<then>
+										<propertycopy property="execGroup" from="bar.@{barName}.execGroup" />
+									</then>
+									<else>
+										<propertycopy property="execGroup" from="IIB_EXEC_GRP" />
+									</else>
+								</if>
+
+								<!-- Get application(s) -->
+
+								<if>
+									<isset property="bar.applicationsList" />
+									<then>
+										<propertycopy property="barApplications" from="bar.applicationsList" />
+									</then>
+								</if>
+
+								<!-- Get monitoring profile -->
+
+								<if>
+									<isset property="bar.@{barName}.monitoringProfile" />
+									<then>
+										<propertycopy property="monitoringProfile" from="bar.@{barName}.monitoringProfile" />
+									</then>
+								</if>
+
+								<!-- Activate monitoring of bar app(s) by running mqsichangeflowmonitoring command on remote machine -->
+
+								<echo message="Activating monitoring for bar file: sshexec . $IIB_BIN/mqsiprofile;$IIB_BIN/mqsichangeflowmonitoring $IIB_BROKER -e ${execGroup} -k ${barApplications} -j -m ${monitoringProfile} -c active" />
+
+								<antcall target="-sshWithKeyfile">
+
+									<param name="targetHost" value="@{iibRemoteBrokerHost}" />
+									<param name="targetUser" value="${OS_USER_ID}" />
+									<param name="keyfile" value="${OS_KEYFILE}" />
+									<param name="command" value=". $IIB_BIN/mqsiprofile;$IIB_BIN/mqsichangeflowmonitoring $IIB_BROKER -e ${execGroup} -k ${barApplications} -j -m ${monitoringProfile} -c active" />
+									<param name="logFileName" value="IIBActivateMonitoring.@{barName}.@{iibRemoteBrokerHost}.log" />
+
+								</antcall>
+
+							</then>
+						</if>
+
+						<antcall target="-checkIIBErrors">
+							<param name="fileToCheck" value="${BUILD_LOGS}/IIBActivateMonitoring.@{barName}.@{iibRemoteBrokerHost}.log" />
+							<param name="fileToCheckLabel" value="Activate monitoring profile for @{barName} log file (with error description)." />
+						</antcall>
+
+						<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_LOGS}/IIBActivateMonitoring.@{barName}.@{iibRemoteBrokerHost}.log" label="Activate monitoring profile for @{barName} log file." />
+
+					</sequential>
+				</for>
+			</sequential>
+		</for>
+
+	</target>
+
+	<target name="-restartBroker">
+
+		<echo message="Restarting broker ${brokerName}" />
+
+		<!-- Restart broker -->
+
+		<exec dir="${user.dir}" executable="/usr/bin/expect" output="${BUILD_LOGS}/IIBRestart.${brokerName}.log" failonerror="false" resultproperty="error.IIBRestart">
+			<arg value="${BUILD_SUBSCRIPTS}/restartBroker.sh" />
+			<arg value="${restartUser}" />
+			<arg value="${restartPassword}" />
+			<arg value="${restartHost}" />
+			<arg value="${brokerName}" />
+			<arg value="${MQSI_BIN}" />
+		</exec>
+
+		<!-- Check errors -->
+
+		<antcall target="-checkIIBErrors">
+			<param name="fileToCheck" value="${BUILD_LOGS}/IIBRestart.${brokerName}.log" />
+			<param name="fileToCheckLabel" value="Restart ${brokerName} broker log file (with error description)." />
+			<param name="returnCode" value="${error.IIBRestart}" />
+		</antcall>
+
+		<!-- Publish log -->
+
+		<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${BUILD_LOGS}/IIBRestart.${brokerName}.log" label="Restart ${brokerName} broker log file." />
+
+	</target>
+
+	<target name="-checkIIBErrors">
+
+		<if>
+			<not>
+				<equals arg1="${skipLogParse}" arg2="true" />
+			</not>
+			<then>
+
+				<var name="failResponse" unset="true" />
+				<var name="fileToCheckContents" unset="true" />
+
+				<loadfile property="fileToCheckContents" srcFile="${fileToCheck}" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*java/lang/OutOfMemoryError.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*java.lang.OutOfMemoryError.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*BIP0965E.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*BIP1921S.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*Processing dump event.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*does not exist.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*The file was not deployed.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*Invalid parameters.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*threw and exception.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*MQ reason code.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*has the status of 'FAILED'.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*Workspace has errors on it after the build.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*The broker rejected the deployment request.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*did not contain a top-level deployment descriptor.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*Permission denied.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*No such file or directory.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*The operation could not be completed by the broker:.*)" select="\1" />
+
+				<propertyregex property="failResponse" input="${fileToCheckContents}" regexp="(.*Error compiling.*)" select="\1" />
+			</then>
+			<else>
+				<echo message="Skipping parsing of log file" />
+			</else>
+
+		</if>
+
+		<echo message="Return code = ${returnCode}" />
+
+		<if>
+			<isset property="failResponse" />
+
+			<then>
+				<echo message="Response is not OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+
+				<propertyregex property="failResponse" override="true" input="${failResponse}" regexp="&quot;" replace="" global="true" defaultValue="${failResponse}" />
+
+				<fail message="Error line [${failResponse}] found in ${fileToCheck}. The full file contents is written to the log output and could provide further context." />
+			</then>
+
+			<elseif>
+				<not>
+					<equals arg1="${returnCode}" arg2="0" />
+				</not>
+				<then>
+					<echo message="Response is not OK" />
+
+					<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+
+					<fail message="Error message returned in ${fileToCheck}. Refer to published log file contents for details." />
+				</then>
+			</elseif>
+			<else>
+				<echo message="Response is OK" />
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-checkFileDeployErrors">
+
+		<loadfile property="failResponse" srcfile="${fileToCheck}">
+			<filterchain>
+				<linecontainsregexp>
+					<regexp pattern="Permission denied" />
+				</linecontainsregexp>
+			</filterchain>
+		</loadfile>
+
+		<if>
+			<isset property="failResponse" />
+			<then>
+				<echo message="Response is not OK" />
+
+				<logPublisher buildResultUUID="${buildResultUUID}" repositoryAddress="${repositoryAddress}" userId="${RTC_USER_ID}" passwordFile="${RTC_PASSWORD_FILE}" verbose="true" filePath="${fileToCheck}" label="${fileToCheckLabel}" />
+
+				<if>
+					<equals arg1="${IGNORE_ERROR}" arg2="Y" />
+					<then>
+						<echo message="Ignoring error in ${fileToCheck}" />
+					</then>
+					<else>
+						<fail message="Error message returned in ${fileToCheck}. Refer to published log file contents for details." />
+					</else>
+				</if>
+			</then>
+			<else>
+				<echo message="Response is OK" />
+			</else>
+		</if>
+
+	</target>
+
+	<target name="-init">
+
+		<echo>Image build timestamp:1651268791</echo>
+
+		<!-- Load ant contrib -->
+
+		<echo message="Load ant contrib" />
+		<taskdef resource="net/sf/antcontrib/antlib.xml">
+			<classpath>
+				<pathelement location="${BUILD_TOOLS}/build-common-linux/lib/ant-contrib-1.0b3.jar" />
+			</classpath>
+		</taskdef>
+
+		<!-- Optionally load default properties if they exist (need to set DEFAULT_PROPERTIES to the full path to the property file) -->
+
+		<if>
+			<available file="${DEFAULT_PROPERTIES}" />
+			<then>
+				<echo message="Loading default properties from ${DEFAULT_PROPERTIES}" />
+				<loadproperties srcFile="${DEFAULT_PROPERTIES}" />
+			</then>
+		</if>
+
+		<!-- Set platform override pre properties -->
+
+		<antcallback target="-applyPlatformOverridesPre" return="BUILD_HOME" />
+
+		<!-- Load property files -->
+
+		<property file="../build-common-linux/build-common-pre.properties" />
+		<property file="build.properties" />
+		<property file="../build-common-linux/build-common-post.properties" />
+
+		<!-- Set platform override post properties -->
+
+		<antcallback target="-applyPlatformOverridesPost" return="BUILD_LOGS, BUILD_OUTPUT, BUILD_TMP, ASSEMBLY_PATH, RTC_PASSWORD, buildLabel, buildLink, userId, engineId" />
+
+		<!-- Execute common init steps -->
+
+		<antcallback target="-initCommon" />
+
+		<!-- Optionally load loadProperties if they exist -->
+
+		<if>
+			<available file="${BUILD_TMP}/loadProperties.properties" />
+			<then>
+				<loadproperties srcFile="${BUILD_TMP}/loadProperties.properties" />
+			</then>
+		</if>
+
+		<if>
+			<not>
+				<isset property="BUILD_SOURCE_PATH_EXTENSION" />
+			</not>
+			<then>
+				
+				<echo message="No path extension applied" />
+			</then>
+			<else>
+				<echo message="Applying path extension: ${BUILD_SOURCE_PATH_EXTENSION}" />
+				
+				<var name="temp.BUILD_SOURCE" value="${BUILD_SOURCE}" />			
+				<var name="BUILD_SOURCE" unset="true" />
+				<var name="BUILD_SOURCE" value="${temp.BUILD_SOURCE}/${BUILD_SOURCE_PATH_EXTENSION}" />
+				
+				<echo message="New BUILD_SOURCE: ${BUILD_SOURCE}" />
+			</else>
+		</if>
+
+		<echo message="Completed initialization" />
+
+	</target>
+
+	<target name="-initAppDeploy" depends="">
+
+		<for list="${bars.list}" param="barName" delimiter=";">
+			<sequential>
+
+				<if>
+					<and>
+						<not>
+							<isset property="IIB_EXEC_GRP" />
+						</not>
+						<not>
+							<isset property="bar.@{barName}.execGroup" />
+						</not>
+					</and>
+					<then>
+						<fail>Need to either have IIB_EXEC_GRP property set as a default, or bar.&lt;barName&gt;.execGroup property set for each bar in bars.list.</fail>
+					</then>
+				</if>
+
+			</sequential>
+		</for>
+
+	</target>
+
+</project>

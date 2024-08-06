@@ -1,0 +1,123 @@
+### For nameOverride use Integation Server Name.
+
+nameOverride: oms
+
+
+### Bar auth override may not change frequently and if is server specific override please change it accordingly
+
+nameConfigBarAuth: oms
+
+### ACE Image Version
+version: 12.0.7.0-r3
+
+### license accept string value. Refer IBM documentation for accepted values.
+license: L-VTPK-22YZPK
+
+### licenseAccept Enable: true or Disable: false
+licenseAccept: true
+
+### licenseUse accept string value. Refer IBM documentation for accepted values.
+licenseUse: CloudPakForIntegrationProduction
+
+### Kubernates Cluster Domain
+kubernetesClusterDomain: cluster.local
+
+### Annotations
+cloudpakId: 
+cloudpakName: IBM Cloud Pak for Integration
+productChargedContainers: All
+productCloudpakRatio: "2:3"
+productID: 
+productMetric: VIRTUAL_PROCESSOR_CORE
+productName: IBM App Connect Enterprise for non-production
+
+
+
+### Dashboard Enable: true or Disable: false
+createDashboardUsers: true
+
+### designerFlowsOperationMode Enable: true or Disable: false
+designerFlowsOperationMode: disabled
+
+### enableMetrics Enable: true or Disable: false
+enableMetrics: true
+
+### adminServerSecure Enable: true or Disable: false
+adminServerSecure: false
+
+### logFormat. Refer IBM documentation for accepted values.
+logFormat: basic
+
+### Resource Limit
+cpuLimit: 1000m
+memoryLimit: 8192Mi
+
+### Resource Request
+cpuRequest: 500m
+memoryRequest: 4096Mi
+
+### Number of Replica
+replicas: 1
+
+### Target CPU % for initaiting Autoscaling
+targetCPUUtilization: 70
+
+### Target Memory % for initaiting Autoscaling
+targetMemoryUtilization: 70
+
+### Max Number of Replica for Autoscaling
+maxReplica: 1
+
+### Min Number of Replica for Autoscaling
+minReplica: 1
+
+### HAProxy Loadbalancer Hostname and IP
+hostAliasesHostnames: 
+hostAliasesIP: 
+
+### Router Timeout
+routerTimeout: 120s
+
+### Server Endpoint Type
+serviceEndpointType: http
+
+### Service Type NodePort/Loadbalancer
+serviceType: ClusterIP
+
+
+### Configuration List
+configurationList: ps-truststore
+
+### affinity Key 
+affinityKey: sw-seap
+
+### affinity Operator
+affinityOperator: In
+
+### affinity Values
+affinityValues: ace-applications
+
+
+### Generic Configuration. Value is Base64 encoded.   
+genericBase64: 
+
+### Git Auth for downloading Bar. Value is Base64 encoded.
+barauthBase64: eyJhdXRoVHlwZSI6IkJBU0lDX0FVVEgiLCJjcmVkZW50aWFscyI6eyJ1c2VybmFtZSI6InNodWJoYW0uZ3VyYW8iLCJwYXNzd29yZCI6IjNjeG9sZGc3aHNtbmU0ZWpmN3NlN2I0Z2NieG90M2RuYmo0NjZkZmM1b2dkbDdwbW9oeXEifX0
+
+### ODBC conection configuration. Value is Base64 encoded.
+odbcBase64: 
+
+### Policy files zipped and Base64 encoded.
+policyprojectBase64: 
+
+### Server configuration file Base64 encoded.
+serverconfBase64: 
+
+### Database parameters Base64 encoded.
+setdbparmsBase64: 
+
+### JKS Truststore Base64 encoded.
+truststoreBase64: 
+
+### List of BAR files URL which will be deployed to ACE.Comma Seperated with Bar URL
+barList: 

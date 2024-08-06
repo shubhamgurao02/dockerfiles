@@ -1,0 +1,32 @@
+# # Use the official PostgreSQL image from Docker Hub
+# FROM postgres:latest
+
+# # Set environment variables for the database name, username, and password
+# ENV POSTGRES_DB=azuredb
+# ENV POSTGRES_USER=postgres
+# ENV POSTGRES_PASSWORD=postgres
+
+# # Copy the custom pg_hba.conf file to the container
+# COPY pg_hba.conf /etc/postgresql/${PG_MAJOR}/main/pg_hba.conf
+
+# # Copy the SQL script to create the database schema
+# COPY init.sql /docker-entrypoint-initdb.d/
+
+# # Expose the default PostgreSQL port
+# EXPOSE 5432
+
+
+FROM ubuntu:latest
+ENV TZ=Asia/Kolkata
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt-get update \
+    && apt-get install -y postgresql \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pg_hba.conf /etc/postgresql/14/main/pg_hba.conf
+
+EXPOSE 5432
+CMD service postgresql start 
+

@@ -1,0 +1,9 @@
+--- 
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: {{ include "amenities.cnfg.barauth" . }}-nexus-barauth
+spec:
+  data: {{ .Values.barauthBase64 }}
+  description: authentication for github
+  type: barauth

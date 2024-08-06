@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><monitor:monitor version="6.00" xmlns:monitor="http://www.ibm.com/xmlns/wmqfte/7.0.1/MonitorDefinition" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ibm.com/xmlns/wmqfte/7.0.1/MonitorDefinition ./Monitor.xsd">
+  <name>ACE_OMSEU_OMS_BI_PROTECTEDSTOCK_TEST16</name>
+  <pollInterval units="minutes">2</pollInterval>
+  <agent>AGNT.MFT.Q01.MFT01</agent>
+  <resources>
+    <directory recursionLevel="0">/tmp/in</directory>
+  </resources>
+  <triggerMatch>
+    <conditions>
+      <allOf>
+        <condition>
+          <fileSizeSame polls="1">
+            <pattern>*.csv</pattern>
+          </fileSizeSame>
+        </condition>
+      </allOf>
+    </conditions>
+  </triggerMatch>
+  <tasks>
+    <task>
+      <name/>
+      <transfer>
+        <request version="6.00" xsi:noNamespaceSchemaLocation="FileTransfer.xsd">
+          <managedTransfer>
+            <originator>
+              <hostName>${env.COMPUTERNAME}</hostName>
+              <userID>${env.USERNAME}</userID>
+            </originator>
+            <sourceAgent QMgr="MFTA2HQ01" agent="AGNT.MFT.Q01.MFT01"/>
+            <destinationAgent QMgr="MFTA2HQ01" agent="AGNT.MFT.Q01.MFT01"/>
+            <transferSet priority="0">
+              <metaDataSet>
+                <metaData key="mqaPreMon">SUBST</metaData>
+                <metaData key="mqaPreSrc">NOOP</metaData>
+                <metaData key="mqaPreDst">NOOP</metaData>
+                <metaData key="mqaPostDst">NOOP</metaData>
+                <metaData key="mqaPostSrc">NOOP</metaData>
+                <metaData key="mqaSLAClass">SLA_MAX</metaData>
+                <metaData key="mqaCompName">RalphLauren</metaData>
+                <metaData key="mqaDeptName">OMSEU</metaData>
+                <metaData key="mqaDocType">DefaultDocType</metaData>
+                <metaData key="mqaDocId">${FILENAME}</metaData>
+              </metaDataSet>
+              <item checksumMethod="MD5" mode="binary">
+                <source disposition="delete" recursive="false">
+                  <file>/tmp/</file>
+                </source>
+                <destination exist="overwrite" type="directory">
+                  <file>/tmp/out</file>
+                </destination>
+              </item>
+            </transferSet>
+            <job>
+              <name>ACE_OMSEU_OMS_BI_PROTECTEDSTOCK_TEST16</name>
+            </job>
+          </managedTransfer>
+        </request>
+      </transfer>
+    </task>
+  </tasks>
+  <originator>
+    <hostName>10.0.10.249</hostName>
+    <userID>rdqmuser</userID>
+  </originator>
+  <job>
+    <name>ACE_OMSEU_OMS_BI_PROTECTEDSTOCK_TEST16</name>
+  </job>
+</monitor:monitor>

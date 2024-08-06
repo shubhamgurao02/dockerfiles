@@ -1,0 +1,25 @@
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "oms.fullname" . }}-hpa
+spec:
+  scaleTargetRef:
+    kind: IntegrationServer
+    name: {{ include "amenities.fullname" . }}
+    apiVersion: appconnect.ibm.com/v1beta1
+  minReplicas: {{ .Values.minReplica }} 
+  maxReplicas: {{ .Values.maxReplica }} 
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.targetCPUUtilization }}   
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.targetMemoryUtilization }}

@@ -1,0 +1,7 @@
+{
+  "application": "@APPLICATION@",
+  "description": "Requesting deployment",
+  "applicationProcess": "@APPLICATION_PROCESS@",
+  "environment": "@ENVIRONMENT@",
+  "onlyChanged": "true"
+}

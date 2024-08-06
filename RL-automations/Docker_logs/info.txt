@@ -1,0 +1,9 @@
+docker run -p 8086:8086 -v C:\RL\RLreplace\RL-automations\Docker_logs\myInfluxVolume:/var/lib/influxdb2 influxdb:latest
+
+http://10.203.10.70/
+
+Y2QFyvTqg4PxSc2naoNh0xD8xuFYoRpIVBoX089MhLnftZW6_09EH_fLuol7N8_4n2ACC_llY0pMSbyRoiuqwg==
+
+
+
+nsIpxJ2UfUZLoNdeRFc4C95-oMlApERDI9_U1Oww8tTVcnFuCwEKo-qZ42GGlmoZ_PB4R1GiA5xiFrVpHzvh3Q==

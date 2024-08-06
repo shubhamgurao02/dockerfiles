@@ -1,0 +1,5 @@
+commands:
+1) For backup: 
+    ansible-playbook mq-mft-main.yaml --extra-vars "qmgr=<qmgr name> action=backup"
+2) For restore:
+    ansible-playbook mq-mft-main.yaml --extra-vars "qmgr=<qmgr name> action=restore"

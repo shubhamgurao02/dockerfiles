@@ -1,0 +1,93 @@
+# check for the GPU provided in the runtime
+ !nvidia-smi
+ # using quiet method for controlling the log
+ # for suppressing the colored errors and warning in the terminal
+ !pip install --quiet transformers==4.1.1
+ # pytorch lightning for smoother model training and data loading
+ !pip install --quiet https://github.com/PyTorchLightning/pytorch-lightning/releases/download/1.2.6/pytorch-lightning-1.2.6.tar.gz 
+ # using HuggingFace tokenizers
+ !pip install --quiet tokenizers==0.9.4
+ # Google's sentencepiece
+ !pip install --quiet sentencepiece==0.1.94
+ # mostly pl is used while doing complex model training
+ import pytorch_lightning as pl
+ print(pl.__version__)
+ # argparse makes it easier to write user friendly command line interfaces
+ import argparse
+ # package for faster file name matching
+ import glob
+ # makiing directories for data 
+ import os
+ # reading json files as the data is present in json files
+ import json
+ # time module for calculating the model runtime
+ import time
+ # Allows writing status messages to a file
+ import logging
+ # generate random float numbers uniformly
+ import random
+ # regex module for text 
+ import re
+ # module provides various functions which work on 
+ # iterators too produce complex iterators
+ from itertools import chain
+ from string import punctuation
+ # pandas for data manipulation
+ import pandas as pd
+ # numpy for array operations
+ import numpy as np
+ # PyTorch
+ import torch
+ # provides various classes representing file system paths
+ # with appropriate semantics
+ from pathlib import Path
+ from torch.utils.data import Dataset, DataLoader
+ import pytorch_lightning as pl
+ # splitting the data 
+ from sklearn.model_selection import train_test_split
+ # ANSII color formatting for ouput in terminal
+ from termcolor import colored
+ # wrapping paragraphs into string
+ import textwrap
+ # model checkpoints in pretrained model
+ from pytorch_lightning.callbacks import ModelCheckpoint
+ '''
+ optimizer - AdamW
+ T5 Conditional Generator in which we'll give conditions
+ T5 tokenizer because it is fast
+ training the model without a learning rate
+ '''
+ from transformers import (
+     AdamW,
+     T5ForConditionalGeneration,
+     T5Tokenizer,
+     get_linear_schedule_with_warmup
+ )
+ # Seeds all the processes including numpy torch and other imported modules.
+ pl.seed_everything(0)
+ # check the version provided by Lightning
+ import pytorch_lightning as pl
+ print(pl.__version__) 
+Downloading the Dataset
+ # QA dataset from https://github.com/dmis-lab/bioasq-biobert
+ # which is in Zip format
+ !gdown --id 1mxVUywvKzvA9bvrUc11RYuOTy7MYcXHF
+ # Unzipping the folder
+ !unzip -q bio-QA.zip
+ # let's have a look at one of the files
+ with Path("BioASQ/BioASQ-train-factoid-4b.json").open() as json_file:
+   data = json.load(json_file)     
+ # Data is a dictionary
+ data.keys()
+ Let’s have a look at how the data is stored and in what format.
+ Data['version']
+ # len of each file
+ len(data['data'])
+ # We have a list of dictionaries in the "data". We can explore the 0th element
+ data['data'][0].keys()
+ data['data'][0]['title']
+ len(data['data'][0]['paragraphs'])
+ questions = data['data'][0]['paragraphs']
+ # datapoint sample
+ questions[0] 
+ 

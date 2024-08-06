@@ -1,0 +1,20 @@
+ deploy_qa_timeandexpensesms:
+   stage: deploy
+   tags:
+     - ppm-qa
+   dependencies:
+     - build_timeandexpensesms_qa 
+   script:
+     - ls -ltr
+     - podman rmi --force timeandexpensesms 
+     - podman rm -f timeandexpensesms 
+     - podman build -t timeandexpensesms --build-arg WAR_FILE=timeandexpensesms.war --build-arg TOMCAT_PORT=80 -f java11file .
+     - podman run -d --network ppm_network --name timeandexpensesms -p 9208:8080 timeandexpensesms 
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa"
+       changes:
+         - timeandexpensesms/**/*
+   needs:
+     - job: build_timeandexpensesms_qa
+

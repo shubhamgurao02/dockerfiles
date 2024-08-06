@@ -1,0 +1,13 @@
+server {
+        listen 3000;
+        listen [::]:3000;
+
+        root /home/iapepms/sourceppm/build;
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name 10.11.12.149;
+
+        location / {
+               try_files $uri $uri/ /index.html;
+        }
+}

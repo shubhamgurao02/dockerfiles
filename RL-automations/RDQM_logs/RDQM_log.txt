@@ -1,0 +1,20 @@
+May  2 02:33:51 rllp3mq pacemaker-controld[2458]: notice: High CPU load detected: 8.320000
+May  2 02:34:21 rllp3mq pacemaker-controld[2458]: notice: High CPU load detected: 8.290000
+May  2 02:36:21 rllp3mq pacemaker-controld[2458]: notice: High CPU load detected: 8.250000
+May 24 02:36:51 rllp3mq pacemaker-controld[2458]: notice: High CPU load detected: 6.950000
+Jan 31 07:40:51 rllp3mq pacemaker-controld[2458]: notice: High CPU load detected: 7.010000
+Jan 25 07:59:51 rllp1mq pacemaker-execd[2683]: warning: p_drbd_iiba1hp01_monitor_10000 process (PID 4170613) timed out
+Sep 13 02:56:05 rllp1mq kernel: drbd iiba2hp01 rllp2mq.poloralphlauren.com: sock was shut down by peer
+Jan 25 07:59:51 rllp1mq kernel: drbd iiba1hp01/0 drbd102 rllp3mq.poloralphlauren.com: Remote failed to finish a request within 42501ms > ko-count (7) * timeout (60 * 0.1s)
+Jan 25 07:59:51 rllp1mq kernel: drbd mfta2hp01/0 drbd104 rllp3mq.poloralphlauren.com: Remote failed to finish a request within 42499ms > ko-count (7) * timeout (60 * 0.1s)
+Sep 13 08:13:07 rllp1mq kernel: drbd mfta2hp01 rllp3mq.poloralphlauren.com: conn( Connected -> Timeout ) peer( Secondary -> Unknown )
+Sep 13 08:13:07 rllp1mq kernel: drbd iiba1hp01 rllp3mq.poloralphlauren.com: conn( Connected -> Timeout ) peer( Secondary -> Unknown )
+Sep 13 08:13:32 rllp1mq pacemaker-controld[2687]: notice: High CPU load detected: 20.020000
+Sep 13 08:13:05 rllp2mq pacemaker-execd[2639]: warning: p_drbd_repa2hp01_monitor_20000 process (PID 423865) timed out
+Sep 13 08:13:06 rllp2mq kernel: drbd iiba2hp01/0 drbd103 rllp3mq.poloralphlauren.com: Remote failed to finish a request within 42060ms > ko-count (7) * timeout (60 * 0.1s)
+Sep 13 08:13:06 rllp2mq kernel: drbd iiba2hp01/0 drbd103 rllp1mq.poloralphlauren.com: Remote failed to finish a request within 42060ms > ko-count (7) * timeout (60 * 0.1s)
+Sep 13 08:12:45 rllp3mq pacemaker-execd[2643]: warning: p_drbd_repa1hp01_monitor_20000 process (PID 4170484) timed out
+Sep 13 08:13:06 rllp3mq kernel: drbd iiba2hp01 rllp2mq.poloralphlauren.com: sock was shut down by peer
+Sep 13 08:13:06 rllp3mq kernel: drbd mfta2hp02/0 drbd105 rllp1mq.poloralphlauren.com: Remote failed to finish a request within 42294ms > ko-count (7) * timeout (60 * 0.1s)
+Sep 13 08:13:06 rllp3mq kernel: drbd mfta2hp02/0 drbd105 rllp2mq.poloralphlauren.com: We did not send a P_BARRIER for 42294ms > ko-count (7) * timeout (60 * 0.1s); drbd kernel thread blocked?
+

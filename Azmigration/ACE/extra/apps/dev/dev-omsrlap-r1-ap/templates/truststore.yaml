@@ -1,0 +1,9 @@
+---
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: {{ .Values.truststorename }}
+spec:
+  data: {{ .Values.truststoredata }}
+  description: "Trust store"
+  type: truststore

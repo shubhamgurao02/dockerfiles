@@ -1,0 +1,15 @@
+        {% endfor %}
+ {% if list1 %}
+        {% for index in range(len(list1)) %}
+        {% for i in list1[index] %}
+        <label>Score:</label>
+        <p>{{list1[index][i]}}</p>
+        {% endfor %}
+        {% endfor %}
+
+        {% endif %}
+       
+
+       <p>{% for j  in i.values() %}</p>
+        <p>{{ j }}</p>
+        {% endfor %}

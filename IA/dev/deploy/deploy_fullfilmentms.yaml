@@ -1,0 +1,20 @@
+ deploy_fullfilmentms:
+   stage: deploy
+   tags:
+     - ppmrunner 
+   dependencies:
+     - build_fullfilmentms
+   script:
+     - ls -ltr
+     - podman rmi --force fullfilmentms 
+     - podman rm -f fullfilmentms 
+     - podman build -t fullfilmentms --build-arg WAR_FILE=fullfilmentms.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e     DB_PORT=$DB_PORT -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -d --network ppm_network --name fullfilmentms -p 8093:8080 fullfilmentms 
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-dev" 
+       changes:
+         - fullfilmentms/**/*
+   needs:
+     - job: build_fullfilmentms
+

@@ -1,0 +1,20 @@
+ deploy_qa_costms:
+   stage: deploy
+   tags:
+     - ppm-qa 
+   dependencies:
+     - build_costms_qa 
+   script:
+     #- ls -ltr
+     - podman rmi --force costms 
+     - podman rm -f costms 
+     - podman build -t costms --build-arg WAR_FILE=CostMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+        #podman build -t costms --build-arg WAR_FILE=CostMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -d -e DB_USER=$DB_USER  -e DB_PASSWORD=$DB_PASSWORD -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT --network ppm_network --name costms -p 8090:8080 costms
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa"
+       changes:
+         - CostMS/**/*
+   needs:
+     - job: build_costms_qa
+

@@ -1,0 +1,21 @@
+- name: restore {{qmgr}}
+  shell: |
+    runmqsc {{qmgr}} < /tmp/{{qmgr}}/{{qmgr}}_Backup/{{qmgr}}.mqsc
+    runmqsc {{qmgr}} < /tmp/{{qmgr}}/{{qmgr}}_Backup/{{qmgr}}.authrec
+  register: restore_qm
+- debug:
+    msg: "{{restore_qm.stdout}}"  
+- name: listing the agents
+  shell: |
+    ls -ltr /tmp/{{qmgr}}/MFT/agent_bkp/|awk '{print $NF}'|tail -n +2
+  register: agent_list  
+- name: restore monitor
+  shell: |
+    fteCreateMonitor -mm {{qmgr}} -ma {{item}} -ix /tmp/SMYMFTQM01/{{item}}/*.xml 
+  with_items:
+    - "{{agent_list.stdout}}"  
+  register: state
+
+- debug:
+    msg: "{{state.stdout}}"  
+

@@ -1,0 +1,20 @@
+ deploy_governancems:
+   stage: deploy
+   tags:
+     - ppmrunner
+   dependencies:
+     - build_governancems
+   script:
+     - ls -ltr
+     - podman rmi --force governancems 
+     - podman rm -f governancems 
+     - podman build -t governancems --build-arg WAR_FILE=governancems.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e     DB_PORT=$DB_PORT -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -d --network ppm_network --name governancems -p 8094:8080 governancems 
+
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-dev" 
+       changes:
+         - governancems/**/*
+   needs:
+     - job: build_governancems
+

@@ -1,0 +1,56 @@
+- name: Create a directory if it does not exist
+  file:
+    path: "{{item}}"
+    state: directory
+  with_items:
+    - /tmp/{{qmgr}}
+    - /tmp/{{qmgr}}/files_backup
+    - /tmp/{{qmgr}}/{{qmgr}}_backup    
+    - /tmp/{{qmgr}}/Templates 
+    - /tmp/{{qmgr}}/MFT  
+    - /tmp/{{qmgr}}/MFT/agent_bkp  
+    - /tmp/{{qmgr}}/MFT/monitor_bkp  
+- name: creating backup files
+  copy:
+    src: /var/mqm/qmgrs/{{qmgr}}/qm.ini
+    dest: /tmp/{{qmgr}}/files_backup/
+  with_items:
+    - /var/mqm/qmgrs/{{qmgr}}/qm.ini
+    - /var/mqm/qmgrs/{{qmgr}}
+    - /var/mqm/log/{{qmgr}}
+
+
+- name: taking backup of {{qmgr}}  and authentication
+  shell: |
+    dmpmqcfg -m {{qmgr}} -t all -x all -o mqsc -a > /tmp/{{qmgr}}/{{qmgr}}_Backup/{{qmgr}}.mqsc
+    dmpmqcfg -m {{qmgr}} -x authrec -o setmqaut > /tmp/{{qmgr}}/{{qmgr}}_Backup/{{qmgr}}.authrec
+  become_user: mqm
+- name: agent backup
+  copy:
+    src: /var/mqm/mqft/config/{{qmgr}}/agents/
+    dest: /tmp/{{qmgr}}/MFT/agent_bkp  
+- name: getting details on agents
+  shell: |
+    fteListAgents -v -p {{qmgr}} | grep -i  "{{qmgr}}" | awk '{print $1}'
+  register: agent_list
+- name: create directory for agents
+  file: 
+    path: /tmp/{{qmgr}}/MFT/monitor_bkp/"{{item}}"
+    state: directory
+  with_items:
+    - "{{agent_list.stdout}}"
+- name: create backup of monitors
+  shell: |
+    fteListMonitors -ma PSFT.P01.MFT01 -od /tmp/{{qmgr}}/MFT/monitor_bkp/"{{item}}"
+  with_items:
+    - "{{agent_list.stdout}}"
+  register: mon_bkp    
+- debug:
+    msg: "{{mon_bkp}}"  
+- name: backup for templates
+  shell: |
+    fteListTemplates -x -o /tmp/{{qmgr}}/Templates
+  register: templates
+- debug:
+    msg: "{{templates.stdout}}"  
+

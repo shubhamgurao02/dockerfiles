@@ -1,0 +1,9 @@
+2023-10-18T09:21:31.718979069Z 2023-10-18 05:21:31.718786: BIP2648E: Message backed out to a queue; message flow node 'test.MQ Input'. 
+2023-10-18T09:49:21.913550920Z 2023-10-18 05:49:21.913314: BIP2558E: (.FullInventory_OMS2IA.Main, 26.8) : Undefined function 'RL_GTMLogging.AddLogEvent'. 
+2023-10-18T09:49:21.913658078Z 2023-10-18 05:49:21.913418: BIP1096E: The source 'OMSEU_FullInventory_Appproject.generated.bar' has been deployed but there were one or more failures which may mean the deployed resources will be unable to execute. 
+2023-10-18T09:49:21.913521361Z 2023-10-18 05:49:21.913222: BIP9318E: Request to 'PreSetupValidate' resource 'OMSEU_FullInventory_App', 'OMSEU_FullInventory_App' of type 'Application' failed. 
+2023-10-18T09:48:47.697611482Z 2023-10-18 05:48:47.697500: BIP1096E: The source 'RL_COMMON_GTMLogging_Libproject.generated.bar' has been deployed but there were one or more failures which may mean the deployed resources will be unable to execute. 
+2023-10-18T09:48:47.697421123Z 2024-02-01 20:34:47.697316: BIP2943E: The Java Method 'com.rl.common.mqlist.retrieveMQNames.getPolicyProperty' could not be found as its containing class could not be found in the deployed bar file or in the 'workpath/shared-classes/' directory. 
+2023-10-18T09:48:47.697416663Z 2023-10-18 05:48:47.697276: BIP3202E: (RL_GTMLogging.getPolicyProperty, 1.1) : An error occurred when trying to resolve the Java class or method 'com.rl.common.mqlist.retrieveMQNames.getPolicyProperty' which is referred to by the routine 'getPolicyProperty'. 
+2023-10-18T09:48:47.697393938Z 2023-10-18 05:48:47.697192: BIP9318E: Request to 'PreSetupValidate' resource 'RL_COMMON_GTMLogging_Lib', 'RL_COMMON_GTMLogging_Lib' of type 'SharedLibrary' failed. 
+2024-01-02T12:00:50.149821773Z 2024-13-02 08:55:50.149012: BIP2668E: A single error occurred in output node 'OMSRLAP_OMS2RELATE_PosLog.ErrorHandler.MQ Output' during destination list processing. 

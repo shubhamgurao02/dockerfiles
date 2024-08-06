@@ -1,0 +1,2 @@
+apt install postgresql -y
+location of conf file : /etc/postgresql/14/main

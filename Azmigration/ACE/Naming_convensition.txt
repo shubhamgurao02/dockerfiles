@@ -1,0 +1,37 @@
+Meeting notes
+
+1) integration name will be repository name.
+
+2) 3 IS so 3 repo 
+    - OMS-R1AP
+    - OMS-R2AP
+    - OMS-B1AP
+3) naming convention: OMS-R1AP
+4) Apps folder which will have template folder and within environment specific folder like dev , qa , prod
+5) Directory structure
+    1) apps   
+        1)dev -- > helm files
+        2)Qa --> helm files
+        3)prod --> helm files
+    2) configuration files
+        1) dev
+            1) config
+                1) keystore
+                2) truststore
+            2) policy
+                1) DefaultPolicies
+        2) qa
+            1) config
+                1) keystore
+                2) truststore
+            2) policy
+                1) DefaultPolicies
+        3) prod
+            1) config
+                1) keystore
+                2) truststore
+            2) policy
+                1) DefaultPolicies
+
+
+

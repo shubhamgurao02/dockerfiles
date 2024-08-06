@@ -1,0 +1,10 @@
+---
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: {{ .Values.policyprojectname }}
+  namespace: {{ .Values.policyprojectnamespace }}
+spec:
+  data: {{ .Values.policyprojectdata }}
+  description: "Policy Project for ACE"
+  type: policyproject

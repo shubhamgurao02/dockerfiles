@@ -1,0 +1,17 @@
+ build_accountingms:
+   stage: build
+   tags:
+     - ppmrunner
+   script: 
+       - podman pull docker.io/shubhgdocker/pbc-java-jdk-11-build:latest
+       - ls -ltr
+       - podman run -e DB_USER=$DB_USER  -e DB_PASSWORD=$DB_PASSWORD -e PEP_SVN_WRITE_USERNAME=$PEP_SVN_WRITE_USERNAME -e PEP_SVN_WRITE_PASSWORD=$PEP_SVN_WRITE_PASSWORD -e DB_NAME=$DB_NAME -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -v `pwd`:/extra --rm docker.io/shubhgdocker/pbc-java-jdk-11-build:latest build accountingms
+       - cp accountingms/target/*war .
+   artifacts:
+       paths:
+         - '*.war'
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-dev"
+       changes:
+         - accountingms/**/*
+

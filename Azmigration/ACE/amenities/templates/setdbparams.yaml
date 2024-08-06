@@ -1,0 +1,9 @@
+--- 
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: {{ include "amenities.cnfg.dbparm" . }}-odbc-credentials
+spec:
+  data: {{ .Values.setdbparmsBase64 }}
+  description: Configuration for Database
+  type: setdbparms

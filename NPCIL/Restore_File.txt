@@ -1,0 +1,14 @@
+ ======= Restore the QMGR ========================
+ 
+runmqsc SMYMFTQM01 < /tmp/SMYMFTQM01_BKP/SMYMFTQM01.mqsc
+runmqsc SMYMFTQM01 < /tmp/SMYMFTQM01_BKP/SMYMFTQM01.authrec
+
+
+
+=== MFT =======================================
+
+=============Monitors Restore===================
+
+
+fteCreateMonitor -mm SMYMFTQM01 -ma PSFT.AGNT.MFT01 -ix /tmp/SMYMFTQM01/PSFT.P01.MFT01_BKP/*.xml (All Agents xml's which are in backup folder onebyone)
+

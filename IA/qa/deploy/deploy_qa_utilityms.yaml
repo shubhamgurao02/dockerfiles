@@ -1,0 +1,18 @@
+ deploy_qa_utilityms:
+   stage: deploy
+   tags:
+     - ppm-qa
+   dependencies:
+     - build_utilityms_qa 
+   script:
+     - ls -ltr
+     - podman rmi --force utilityms 
+     - podman rm -f utilityms 
+     - podman build -t utilityms --build-arg WAR_FILE=UtilityMS.war --build-arg TOMCAT_PORT=8080 -f java11file .
+     - podman run -d --network ppm_network --name utilityms -p 8105:8080 utilityms 
+   rules:
+     - if: $CI_COMMIT_BRANCH == "ppm-qa"
+       changes:
+         - UtilityMS/**/*
+   needs:
+     - job: build_utilityms_qa

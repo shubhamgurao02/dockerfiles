@@ -1,0 +1,14 @@
+# Use the official PostgreSQL image from Docker Hub
+FROM postgres:latest
+
+# Update the apt package index and install net-tools (for ifconfig)
+RUN apt-get update && apt-get install -y net-tools && apt-get clean
+
+# Update PostgreSQL configuration to listen on all addresses
+RUN echo "listen_addresses='*'" >> /usr/share/postgresql/postgresql.conf.sample
+COPY pg_hba.conf /etc/postgresql/pg_hba.conf
+# Expose the PostgreSQL port
+EXPOSE 5432
+
+# Start PostgreSQL server
+CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]

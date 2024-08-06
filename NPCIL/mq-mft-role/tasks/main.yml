@@ -1,0 +1,8 @@
+---
+# tasks file for mq-mft-role
+- name: for backup
+  import_tasks: backup.yaml
+  when: action == "backup"
+- name: for restore
+  import_tasks: restore.yaml
+  when: action == "restore"   

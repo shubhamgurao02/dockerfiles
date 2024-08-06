@@ -1,0 +1,14 @@
+FROM ubuntu:latest
+
+# Update package list and install essential tools
+RUN apt-get update && apt-get install -y software-properties-common
+
+# Add the OpenJDK PPA repository for Java 8
+RUN add-apt-repository ppa:openjdk-r/ppa && apt-get update
+
+# Install OpenJDK 8
+RUN apt-get install -y openjdk-8-jdk
+
+# Set Java environment variables
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64/
+ENV PATH $JAVA_HOME/bin:$PATH

@@ -1,0 +1,45 @@
+import time
+from prometheus_client import start_http_server, Summary, Gauge
+import requests
+import json
+
+# Define Prometheus metrics
+request_duration_summary = Summary('azure_devops_request_duration_seconds', 'Request duration in seconds for Azure DevOps API')
+response_status = Gauge('azure_devops_response_status', 'Response status code for Azure DevOps API')
+
+# Azure DevOps API endpoint and personal access token
+api_url = 'https://dev.azure.com/YourOrganization/YourProject/_apis/build/builds?api-version=7.0'
+personal_access_token = 'YOUR_PERSONAL_ACCESS_TOKEN'
+
+# Function to fetch data from Azure DevOps API
+def fetch_data():
+    try:
+        headers = {
+            'Authorization': f'Basic {personal_access_token}'
+        }
+
+        start_time = time.time()
+        response = requests.get(api_url, headers=headers)
+        request_duration = time.time() - start_time
+
+        response_status.set(response.status_code)
+        request_duration_summary.observe(request_duration)
+
+        if response.status_code == 200:
+            data = response.json()
+            # Process the data as needed
+        else:
+            print(f'Failed to fetch data from Azure DevOps API. Status Code: {response.status_code}')
+            print(response.text)  # Print the response content for debugging
+
+    except Exception as e:
+        print(f'Error: {str(e)}')
+
+if __name__ == '__main__':
+    # Start the Prometheus HTTP server
+    start_http_server(8080)
+
+    # Periodically fetch data from Azure DevOps API
+    while True:
+        fetch_data()
+        time.sleep(300)  # Fetch data every 5 minutes (adjust as needed)

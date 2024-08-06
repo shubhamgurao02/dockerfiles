@@ -1,0 +1,108 @@
+<!--
+This file is copyright of Prolifics - (c) Prolifics 2014. All rights reserved. You are not permitted to make copy, modify, or redistribute this file.
+
+See the readme.txt file for further terms and conditions.
+-->
+
+<project name="BuildToolkitTaskDefs">
+
+	<!-- override RTC tasks -->
+
+	<macrodef name="startBuildActivity">
+
+		<attribute name="repositoryaddress" default="NOT SET" />
+		<attribute name="passwordfile" default="NOT SET" />
+		<attribute name="buildresultuuid" default="NOT SET" />
+		<attribute name="userid" default="NOT SET" />
+		<attribute name="label" default="NOT SET" />
+		<attribute name="autocomplete" default="NOT SET" />
+		<attribute name="activityidproperty" default="NOT SET" />
+		<attribute name="parentactivityid" default="NOT SET" />
+
+		<sequential>
+			<echo>
+			</echo>
+			<echo>***** STEP ACTIVITY ***** : @{label}</echo>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="logPublisher">
+
+		<attribute name="repositoryaddress" default="NOT SET" />
+		<attribute name="passwordfile" default="NOT SET" />
+		<attribute name="buildresultuuid" default="NOT SET" />
+		<attribute name="userid" default="NOT SET" />
+		<attribute name="label" default="NOT SET" />
+		<attribute name="filepath" default="NOT SET" />
+		<attribute name="verbose" default="NOT SET" />
+
+		<sequential>
+			<echo>***** LOG FILE ***** : @{label} (Additional logging output below - file from Jenkins in @{filepath}).</echo>
+
+			<var name="message" unset="true" />
+
+			<loadresource property="message">
+				<file file="@{filepath}" />
+			</loadresource>
+
+			<echo>${message}</echo>
+
+		</sequential>
+	</macrodef>
+
+	<macrodef name="artifactFilePublisher">
+
+		<attribute name="repositoryaddress" default="NOT SET" />
+		<attribute name="passwordfile" default="NOT SET" />
+		<attribute name="buildresultuuid" default="NOT SET" />
+		<attribute name="userid" default="NOT SET" />
+		<attribute name="label" default="NOT SET" />
+		<attribute name="filepath" default="NOT SET" />
+		<attribute name="verbose" default="NOT SET" />
+
+		<sequential>
+
+		</sequential>
+
+	</macrodef>
+
+	<macrodef name="linkPublisher">
+
+		<attribute name="repositoryaddress" default="NOT SET" />
+		<attribute name="passwordfile" default="NOT SET" />
+		<attribute name="buildresultuuid" default="NOT SET" />
+		<attribute name="userid" default="NOT SET" />
+		<attribute name="label" default="NOT SET" />
+		<attribute name="verbose" default="NOT SET" />
+		<attribute name="url" default="NOT SET" />
+		<sequential>
+
+			<echo>***** PUBLISHED LINK ***** : Link: @{url} - @{label}</echo>
+
+		</sequential>
+
+	</macrodef>
+
+	<macrodef name="junitLogPublisher">
+
+		<attribute name="repositoryaddress" default="NOT SET" />
+		<attribute name="userid" default="NOT SET" />
+		<attribute name="passwordfile" default="NOT SET" />
+		<attribute name="buildresultuuid" default="NOT SET" />
+		<attribute name="filepath" default="NOT SET" />
+
+		<sequential>
+
+			<basename property="fileName" file="@{filepath}" />
+			<dirname property="dirName" file="@{filepath}" />
+
+			<echo>***** TEST RESULTS (start) ***** (Test results output below - file from UCD agent/resource in @{filepath})${line.separator}</echo>
+			<concat>
+				<filelist dir="${dirName}" files="${fileName}" />
+			</concat>
+			<echo>***** TEST RESULTS (end) *****${line.separator}</echo>
+
+		</sequential>
+	</macrodef>
+
+</project>

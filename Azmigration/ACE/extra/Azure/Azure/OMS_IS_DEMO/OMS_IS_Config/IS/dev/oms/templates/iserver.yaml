@@ -1,0 +1,55 @@
+apiVersion: appconnect.ibm.com/v1beta1
+kind: IntegrationServer
+metadata:
+  name: {{ include "oms.fullname" . }}
+  labels:
+  {{- include "oms.labels" . | nindent 4 }}
+spec:
+  adminServerSecure: {{ .Values.adminServerSecure }}
+  annotations:
+    cloudpakId: '{{ .Values.cloudpakId }}'
+    cloudpakName: '{{ .Values.cloudpakName }}'
+    productChargedContainers: {{ .Values.productChargedContainers }}
+    productCloudpakRatio: "{{ .Values.productCloudpakRatio }}"
+    productID: '{{ .Values.productID }}'
+    productMetric: '{{ .Values.productMetric }}'
+    productName: '{{ .Values.productName }}'
+  barURL: {{ .Values.barList }}
+  createDashboardUsers: {{ .Values.createDashboardUsers }}
+  designerFlowsOperationMode: '{{ .Values.designerFlowsOperationMode }}'
+  enableMetrics: {{ .Values.enableMetrics }}
+  configurations: [ {{ include "oms.cnfg.gen" . }}-generic-config-files , {{ include "oms.cnfg.barauth" . }}-nexus-barauth , {{ include "oms.cnfg.ts" . }}-truststore.jks , {{ include "oms.cnfg.dbparm" . }}-odbc-credentials , {{ include "oms.cnfg.servercon" . }}-server-conf , {{ include "oms.cnfg.policyprj" . }}-project-policy , {{ include "oms.cnfg.odbcini" . }}-odbc , {{ .Values.switchServerName }} ]
+  affinity: 
+    nodeAffinity: 
+      requiredDuringSchedulingIgnoredDuringExecution: 
+        nodeSelectorTerms: 
+        - matchExpressions: 
+          - key: '{{ .Values.affinityKey }}' 
+            operator: '{{ .Values.affinityOperator }}'  
+            values: 
+            - '{{ .Values.affinityValues }}' 
+  labels:
+    version: v1
+  license:
+    accept: {{ .Values.licenseAccept }}
+    license: {{ .Values.license }}
+    use: {{ .Values.licenseUse }}
+  logFormat: '{{ .Values.logFormat }}'
+  pod:
+    containers:
+      runtime:
+        resources:
+          limits:
+            cpu: '{{ .Values.cpuLimit }}'
+            memory: '{{ .Values.memoryLimit }}'
+          requests:
+            cpu: '{{ .Values.cpuRequest }}'
+            memory: '{{ .Values.memoryRequest }}'
+
+  replicas: {{ .Values.replicas }}
+  router:
+    timeout: '{{ .Values.routerTimeout }}'
+  service:
+    endpointType: '{{ .Values.serviceEndpointType }}'
+    type: '{{ .Values.serviceType }}'
+  version: '{{ .Values.version }}'

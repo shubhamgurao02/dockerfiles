@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policies>
+  <policy policyType="MQEndpoint" policyName="RLMQEndpoint" policyTemplate="MQEndpoint">
+<connection>CLIENT</connection>
+<destinationQueueManagerName>ACEAPD01</destinationQueueManagerName>
+<queueManagerHostname>aceapd01-ibm-mq.mq-apac.svc.cluster.local</queueManagerHostname>
+<listenerPortNumber>1414</listenerPortNumber>
+<channelName>ACECHL</channelName>
+<securityIdentity></securityIdentity>
+<useSSL>true</useSSL>
+<SSLPeerName></SSLPeerName>
+<SSLCipherSpec>ECDHE_RSA_AES_128_CBC_SHA256</SSLCipherSpec>
+<reconnectOption>enabled</reconnectOption>
+  </policy>
+</policies>
+

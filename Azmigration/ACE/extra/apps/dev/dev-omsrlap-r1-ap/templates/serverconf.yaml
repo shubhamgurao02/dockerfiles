@@ -1,0 +1,10 @@
+---
+apiVersion: appconnect.ibm.com/v1beta1
+kind: Configuration
+metadata:
+  name: {{ .Values.serverconfname }}
+  namespace: ace-apac
+spec:
+  data: {{ .Values.serverconfdata }}
+  description: "Server conf"
+  type: serverconf
